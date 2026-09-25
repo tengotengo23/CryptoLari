@@ -5,12 +5,14 @@
 
 #include <chainparams.h>
 #include <consensus/merkle.h>
+#include <netbase.h>
 
 #include <tinyformat.h>
 #include <util.h>
 #include <utilstrencodings.h>
 
 #include <assert.h>
+#include <string.h>
 #include <limits>
 
 
@@ -76,6 +78,33 @@ static const char* const DEV_FEE_SCRIPT_MAIN = DEV_FEE_SCRIPT_PLACEHOLDER;
 static const char* const DEV_FEE_SCRIPT_TEST = DEV_FEE_SCRIPT_PLACEHOLDER;
 // Regtest uses OP_2 (anyone can spend), distinct from the OP_TRUE outputs of the test framework.
 static const char* const DEV_FEE_SCRIPT_REGTEST = "52";
+
+/**
+ * Seed nodes that new nodes connect to first: "ip", "ip:port" or a hostname.
+ * IP addresses become fixed seeds, hostnames are resolved like DNS seeds.
+ * Edit with contrib/cryptolari/set_seed_nodes.py.
+ */
+static const std::vector<std::string> SEED_NODES_MAIN = {
+};
+static const std::vector<std::string> SEED_NODES_TEST = {
+};
+
+void ParseSeedNodes(const std::vector<std::string>& nodes, int default_port, std::vector<SeedSpec6>& fixed, std::vector<CDNSSeedData>& dns)
+{
+    for (const std::string& node : nodes) {
+        CService service = LookupNumeric(node.c_str(), default_port);
+        if (service.IsValid()) {
+            SeedSpec6 spec;
+            struct in6_addr ip;
+            service.GetIn6Addr(&ip);
+            memcpy(spec.addr, &ip, sizeof(spec.addr));
+            spec.port = service.GetPort();
+            fixed.push_back(spec);
+        } else {
+            dns.emplace_back(node, false);
+        }
+    }
+}
 
 bool CChainParams::DevFeeScriptIsPlaceholder() const
 {
@@ -160,10 +189,10 @@ public:
         assert(consensus.hashGenesisBlock == uint256S("0x000006a112a5aa6485512822fd1868ae1b74563bb961863804303d6fd6b9e93e"));
         assert(genesis.hashMerkleRoot == uint256S("0x88ded9b9885772aa3df8b3610b8ce6f835463493de870789913c2a19b7fc1b92"));
 
-        // TODO: add DNS seeds and fixed seed nodes once public CryptoLari nodes exist.
-        // Until then, connect nodes manually with -addnode / -connect.
+        // Seed nodes: see SEED_NODES_MAIN above. Without any, connect nodes with -addnode.
         vFixedSeeds.clear();
         vSeeds.clear();
+        ParseSeedNodes(SEED_NODES_MAIN, nDefaultPort, vFixedSeeds, vSeeds);
 
         base58Prefixes[PUBKEY_ADDRESS] = std::vector<unsigned char>(1,38);  // 'G'
         base58Prefixes[SCRIPT_ADDRESS] = std::vector<unsigned char>(1,65);  // 'T'
@@ -247,6 +276,7 @@ public:
 
         vFixedSeeds.clear();
         vSeeds.clear();
+        ParseSeedNodes(SEED_NODES_TEST, nDefaultPort, vFixedSeeds, vSeeds);
 
         base58Prefixes[PUBKEY_ADDRESS] = std::vector<unsigned char>(1,127); // 't'
         base58Prefixes[SCRIPT_ADDRESS] = std::vector<unsigned char>(1,130); // 'u'

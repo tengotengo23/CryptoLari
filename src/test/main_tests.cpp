@@ -105,6 +105,27 @@ BOOST_AUTO_TEST_CASE(dev_fee_test)
     BOOST_CHECK(CheckDevFee(coinbase, 1, regtestParams->GetConsensus()));
 }
 
+BOOST_AUTO_TEST_CASE(seed_nodes_test)
+{
+    std::vector<SeedSpec6> fixed;
+    std::vector<CDNSSeedData> dns;
+    ParseSeedNodes({"1.2.3.4", "5.6.7.8:1234", "[2001:4860::1]:9556", "seed.example.org"}, 9555, fixed, dns);
+
+    BOOST_CHECK_EQUAL(fixed.size(), 3U);
+    const uint8_t ipv4[16] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xff, 0xff, 1, 2, 3, 4};
+    BOOST_CHECK(memcmp(fixed[0].addr, ipv4, 16) == 0);
+    BOOST_CHECK_EQUAL(fixed[0].port, 9555);
+    BOOST_CHECK_EQUAL(fixed[1].addr[15], 8);
+    BOOST_CHECK_EQUAL(fixed[1].port, 1234);
+    BOOST_CHECK_EQUAL(fixed[2].addr[0], 0x20);
+    BOOST_CHECK_EQUAL(fixed[2].addr[15], 1);
+    BOOST_CHECK_EQUAL(fixed[2].port, 9556);
+
+    BOOST_CHECK_EQUAL(dns.size(), 1U);
+    BOOST_CHECK_EQUAL(dns[0].host, "seed.example.org");
+    BOOST_CHECK(!dns[0].supportsServiceBitsFiltering);
+}
+
 bool ReturnFalse() { return false; }
 bool ReturnTrue() { return true; }
 
