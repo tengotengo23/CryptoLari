@@ -32,8 +32,8 @@ This is a consensus rule: blocks that do not pay the dev fee are invalid.
   სულ dev fee-დან: 5% × 84M = **4,200,000 LARI**.
 * BIP16/34/65/66, CSV და SegWit აქტიურია თავიდანვე.
 * მონაცემების დირექტორია: `~/.cryptolari` (Windows: `%APPDATA%\CryptoLari`),
-  კონფიგურაცია: `cryptolari.conf`. ბინარების სახელები ჯერ ისევ `bitcoind`,
-  `bitcoin-cli`, `bitcoin-qt`-ია.
+  კონფიგურაცია: `cryptolari.conf`. პროგრამები: `cryptolarid` (node),
+  `cryptolari-cli`, `cryptolari-tx`, `cryptolari-qt` (GUI).
 
 The dev fee is taken from the subsidy only (miners keep all transaction fees)
 and halves together with it. Total dev fee over the chain's lifetime:
@@ -43,43 +43,45 @@ and halves together with it. Total dev fee over the chain's lifetime:
 -----------------------------------------------------------------------------------
 
 ახლა dev fee მიდის placeholder სკრიპტზე (`76a914 00..00 88ac`), რომლის
-დახარჯვა არავის შეუძლია. ამიტომ `bitcoind` mainnet-ზე **არ ჩაირთვება**, სანამ
-მას არ შეცვლი.
+დახარჯვა არავის შეუძლია. ამიტომ `cryptolarid` mainnet-ზე **არ ჩაირთვება**,
+სანამ მას არ შეცვლი.
 
-1. ააწყე პროექტი (იხ. ქვემოთ) და გაუშვი testnet-ზე:
+1. ააწყე პროექტი (იხ. ქვემოთ) და შექმენი მისამართი testnet-ზე:
 
-       src/bitcoind -testnet -daemon
-       src/bitcoin-cli -testnet getnewaddress "devfee"
-       src/bitcoin-cli -testnet validateaddress <მისამართი>
+       src/cryptolarid -testnet -daemon
+       src/cryptolari-cli -testnet getnewaddress "devfee"      # -> t...
 
-   `validateaddress`-ის პასუხში აიღე `scriptPubKey` (მაგ. `76a914...88ac`).
-   P2PKH სკრიპტი ყველა ქსელში ერთნაირია, მხოლოდ მისამართის ფორმატი განსხვავდება.
+2. **შეინახე გასაღები უსაფრთხოდ**:
 
-2. **შეინახე გასაღები უსაფრთხოდ**: `src/bitcoin-cli -testnet backupwallet /path/backup.dat`
-   (ან `dumpprivkey`). ვინც ამ გასაღებს ფლობს, ის ფლობს dev fee-ს. დაკარგავ და
-   dev fee სამუდამოდ დაიკარგება. უმჯობესია multisig ან offline (cold) გასაღები.
-   mainnet-ზე ამ ფულის დასახარჯად `backup.dat` ჩააგდე `~/.cryptolari/wallet.dat`-ად
-   (ან გააკეთე `importprivkey`).
+       src/cryptolari-cli -testnet backupwallet /უსაფრთხო/ადგილი/devfee-wallet.dat
 
-3. `src/chainparams.cpp`-ში შეცვალე:
+   ვინც ამ გასაღებს ფლობს, ის ფლობს dev fee-ს. თუ დაკარგე, dev fee სამუდამოდ
+   დაიკარგება. შეინახე რამდენიმე ასლი offline (USB, ქაღალდზე `dumpprivkey`).
+   mainnet-ზე ამ ფულის დასახარჯად `devfee-wallet.dat` ჩააგდე
+   `~/.cryptolari/wallet.dat`-ად, ან გამოიყენე `importprivkey`.
 
-       static const char* const DEV_FEE_SCRIPT_MAIN = "76a914<შენი 20 ბაიტი>88ac";
-       static const char* const DEV_FEE_SCRIPT_TEST = "76a914<შენი 20 ბაიტი>88ac";
+3. ჩასვი მისამართი კოდში ერთი ბრძანებით (იგივე გასაღები მუშაობს mainnet-ზეც
+   და testnet-ზეც):
 
-   სურვილისამებრ შეცვალე `DEV_FEE_PERCENT` (ახლა 5).
+       contrib/cryptolari/set_devfee_address.py <მისამართი>
+       make -j$(nproc) && make check
 
-4. ხელახლა ააწყე და გაუშვი ტესტები (`make check`). ეს ცვლილება ქსელის
-   გაშვების **შემდეგ** აღარ შეიცვლება hard fork-ის გარეშე.
+   სურვილისამებრ `src/chainparams.cpp`-ში შეცვალე `DEV_FEE_PERCENT` (ახლა 5).
 
-The mainnet dev fee currently goes to an unspendable placeholder, and `bitcoind`
-refuses to start on mainnet until `DEV_FEE_SCRIPT_MAIN` in `src/chainparams.cpp`
-is replaced with the scriptPubKey of an address you control (get it with
-`validateaddress` on testnet, and back up the key!).
+4. ეს ცვლილება ქსელის გაშვების **შემდეგ** აღარ შეიცვლება hard fork-ის გარეშე.
+
+The mainnet dev fee currently goes to an unspendable placeholder, and `cryptolarid`
+refuses to start on mainnet until you run
+`contrib/cryptolari/set_devfee_address.py <address>` with an address you control
+(create it with `getnewaddress` on testnet and back up the wallet!).
 
 მაინინგი / Mining
 -----------------
 
-* `generatetoaddress` / შიდა მაინერი dev fee-ს თავისით ამატებს.
+* `generatetoaddress` / შიდა მაინერი dev fee-ს თავისით ამატებს. CPU-თი მაინინგი:
+
+      src/cryptolari-cli generatetoaddress 1 <შენი მისამართი> 100000000
+
 * პულებისთვის `getblocktemplate` აბრუნებს ველს
   `"devfee": {"script": "<hex>", "amount": <satoshi>}`. `coinbasevalue` უკვე
   dev fee-ს გარეშეა, და პულის coinbase-ს უნდა ჰქონდეს დამატებითი output ამ
@@ -99,7 +101,7 @@ as returned by `getblocktemplate`; `coinbasevalue` already excludes the dev fee.
     ./autogen.sh
     ./configure --with-incompatible-bdb
     make -j$(nproc)
-    make check                                  # unit tests
+    make check                                  # unit + cryptolari-tx tests
     test/functional/test_runner.py              # functional tests
 
 ქსელის გაშვება / Launching the network

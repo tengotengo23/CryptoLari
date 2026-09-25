@@ -1106,7 +1106,7 @@ bool AppInitParameterInteraction()
 
     if (chainparams.NetworkIDString() == CBaseChainParams::MAIN && chainparams.DevFeeScriptIsPlaceholder()) {
         return InitError("The mainnet dev fee address is still the placeholder, so the dev fee would be lost. "
-                         "Set DEV_FEE_SCRIPT_MAIN in src/chainparams.cpp before running mainnet (see doc/cryptolari.md).");
+                         "Run contrib/cryptolari/set_devfee_address.py <your address> and rebuild before running mainnet (see doc/cryptolari.md).");
     }
 
     if (gArgs.IsArgSet("-devfeeheight")) {
