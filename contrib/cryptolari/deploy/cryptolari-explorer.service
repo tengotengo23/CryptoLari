@@ -1,0 +1,19 @@
+# systemd unit for the CryptoLari explorer and faucet (see DEPLOY.md).
+# It listens on 127.0.0.1:8080; Caddy publishes it over HTTPS.
+# For testnet change --network main to --network test.
+[Unit]
+Description=CryptoLari explorer
+After=cryptolarid.service
+Requires=cryptolarid.service
+
+[Service]
+User=cryptolari
+Group=cryptolari
+ExecStart=/usr/bin/python3 /home/cryptolari/CryptoLari/contrib/cryptolari/explorer/explorer.py --network main --trust-proxy
+Restart=always
+RestartSec=10
+PrivateTmp=true
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target

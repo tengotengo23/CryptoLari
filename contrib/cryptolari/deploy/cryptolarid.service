@@ -1,0 +1,20 @@
+# systemd unit for a CryptoLari node on a server (see DEPLOY.md).
+# Assumes the repository is built in /home/cryptolari/CryptoLari and runs as user "cryptolari".
+# For testnet add -testnet to both ExecStart and ExecStop.
+[Unit]
+Description=CryptoLari node
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=cryptolari
+Group=cryptolari
+ExecStart=/home/cryptolari/CryptoLari/src/cryptolarid -printtoconsole
+ExecStop=/home/cryptolari/CryptoLari/src/cryptolari-cli stop
+Restart=on-failure
+TimeoutStopSec=600
+PrivateTmp=true
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target

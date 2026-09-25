@@ -1,0 +1,5 @@
+# Caddy gets and renews the HTTPS certificate automatically.
+# Replace explorer.example.ge with your domain, whose DNS A record points to this server.
+explorer.example.ge {
+	reverse_proxy 127.0.0.1:8080
+}
