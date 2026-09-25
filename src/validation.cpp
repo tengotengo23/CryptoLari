@@ -46,6 +46,7 @@
 #include <sstream>
 
 #include <boost/algorithm/string/replace.hpp>
+#include <boost/bind.hpp>
 #include <boost/algorithm/string/join.hpp>
 #include <boost/thread.hpp>
 
@@ -1057,10 +1058,36 @@ CAmount GetBlockSubsidy(int nHeight, const Consensus::Params& consensusParams)
     if (halvings >= 64)
         return 0;
 
-    CAmount nSubsidy = 50 * COIN;
-    // Subsidy is cut in half every 210,000 blocks which will occur approximately every 4 years.
+    CAmount nSubsidy = consensusParams.nInitialSubsidy;
+    // Subsidy is cut in half every nSubsidyHalvingInterval blocks (~2 years on mainnet).
     nSubsidy >>= halvings;
     return nSubsidy;
+}
+
+CAmount GetDevFee(int nHeight, const Consensus::Params& consensusParams)
+{
+    if (consensusParams.nDevFeePercent <= 0 || nHeight < consensusParams.nDevFeeStartHeight)
+        return 0;
+    return GetBlockSubsidy(nHeight, consensusParams) * consensusParams.nDevFeePercent / 100;
+}
+
+CScript GetDevFeeScript(const Consensus::Params& consensusParams)
+{
+    return CScript(consensusParams.devFeeScript.begin(), consensusParams.devFeeScript.end());
+}
+
+bool CheckDevFee(const CTransaction& coinbase, int nHeight, const Consensus::Params& consensusParams)
+{
+    const CAmount nDevFee = GetDevFee(nHeight, consensusParams);
+    if (nDevFee == 0)
+        return true;
+    const CScript devFeeScript = GetDevFeeScript(consensusParams);
+    CAmount nPaid = 0;
+    for (const CTxOut& txout : coinbase.vout) {
+        if (txout.scriptPubKey == devFeeScript)
+            nPaid += txout.nValue;
+    }
+    return nPaid >= nDevFee;
 }
 
 bool IsInitialBlockDownload()
@@ -1847,6 +1874,12 @@ static bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockInd
                          error("ConnectBlock(): coinbase pays too much (actual=%d vs limit=%d)",
                                block.vtx[0]->GetValueOut(), blockReward),
                                REJECT_INVALID, "bad-cb-amount");
+
+    if (!CheckDevFee(*block.vtx[0], pindex->nHeight, chainparams.GetConsensus()))
+        return state.DoS(100,
+                         error("ConnectBlock(): coinbase does not pay the dev fee (required=%d)",
+                               GetDevFee(pindex->nHeight, chainparams.GetConsensus())),
+                               REJECT_INVALID, "bad-cb-devfee");
 
     if (!control.Wait())
         return state.DoS(100, error("%s: CheckQueue failed", __func__), REJECT_INVALID, "block-validation-failed");

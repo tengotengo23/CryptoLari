@@ -5,6 +5,11 @@ src/bitcoin
 src/bitcoind
 src/bitcoin-cli
 src/bitcoin-tx
+src/cryptolarid
+src/cryptolari-cli
+src/cryptolari-tx
+src/qt/cryptolari-qt
+configure~
 src/test/test_bitcoin
 src/test/test_bitcoin_fuzzy
 src/qt/test/test_bitcoin-qt

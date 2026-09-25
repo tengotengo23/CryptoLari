@@ -277,6 +277,12 @@ bool GetTransaction(const uint256 &hash, CTransactionRef &tx, const Consensus::P
 /** Find the best known block, and make it the tip of the block chain */
 bool ActivateBestChain(CValidationState& state, const CChainParams& chainparams, std::shared_ptr<const CBlock> pblock = std::shared_ptr<const CBlock>());
 CAmount GetBlockSubsidy(int nHeight, const Consensus::Params& consensusParams);
+/** Amount of the block subsidy that the coinbase must pay to the dev fee script at nHeight */
+CAmount GetDevFee(int nHeight, const Consensus::Params& consensusParams);
+/** scriptPubKey that receives the dev fee */
+CScript GetDevFeeScript(const Consensus::Params& consensusParams);
+/** Check that a coinbase transaction pays at least the required dev fee */
+bool CheckDevFee(const CTransaction& coinbase, int nHeight, const Consensus::Params& consensusParams);
 
 /** Guess verification progress (as a fraction between 0.0=genesis and 1.0=current tip). */
 double GuessVerificationProgress(const ChainTxData& data, CBlockIndex* pindex);

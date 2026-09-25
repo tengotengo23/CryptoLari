@@ -1,3 +1,25 @@
+CryptoLari (LARI)
+=================
+
+CryptoLari is a cryptocurrency based on Bitcoin Core v0.16:
+
+* max supply 84,000,000 LARI, 100 LARI block subsidy halving every 420,000 blocks
+* 2.5 minute blocks, SegWit active from genesis
+* **5% of every block subsidy is paid to the developer (dev fee)**, enforced by consensus
+
+Included tools (`contrib/cryptolari/`):
+
+* `set_devfee_address.py` / `set_seed_nodes.py`: set the dev fee address and seed nodes
+* `explorer/`: block explorer with a JSON API
+* `pool/`: stratum mining pool that pays the dev fee and shares rewards with miners
+* `deploy/setup-node.sh`: one-command node, explorer and pool setup on an Ubuntu VPS
+* `website/`: landing page
+
+See [doc/cryptolari.md](doc/cryptolari.md) for all parameters, the launch checklist,
+mining, Windows and build instructions.
+
+---
+
 Bitcoin Core integration/staging tree
 =====================================
 

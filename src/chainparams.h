@@ -78,6 +78,9 @@ public:
     const CCheckpointData& Checkpoints() const { return checkpointData; }
     const ChainTxData& TxData() const { return chainTxData; }
     void UpdateVersionBitsParameters(Consensus::DeploymentPos d, int64_t nStartTime, int64_t nTimeout);
+    void UpdateDevFeeStartHeight(int nHeight);
+    /** True while the dev fee still goes to the placeholder script (nobody can spend it) */
+    bool DevFeeScriptIsPlaceholder() const;
 protected:
     CChainParams() {}
 
@@ -121,5 +124,15 @@ void SelectParams(const std::string& chain);
  * Allows modifying the Version Bits regtest parameters.
  */
 void UpdateVersionBitsParameters(Consensus::DeploymentPos d, int64_t nStartTime, int64_t nTimeout);
+
+/**
+ * Split seed node entries ("ip", "ip:port" or hostname) into fixed seeds and DNS seeds.
+ */
+void ParseSeedNodes(const std::vector<std::string>& nodes, int default_port, std::vector<SeedSpec6>& fixed, std::vector<CDNSSeedData>& dns);
+
+/**
+ * Allows modifying the dev fee start height (regtest only).
+ */
+void UpdateDevFeeStartHeight(int nHeight);
 
 #endif // BITCOIN_CHAINPARAMS_H

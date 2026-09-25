@@ -202,6 +202,12 @@ UniValue getmininginfo(const JSONRPCRequest& request)
             "  \"networkhashps\": nnn,      (numeric) The network hashes per second\n"
             "  \"pooledtx\": n              (numeric) The size of the mempool\n"
             "  \"chain\": \"xxxx\",           (string) current network name as defined in BIP70 (main, test, regtest)\n"
+            "  \"devfee\": {                (json object) dev fee rules\n"
+            "    \"script\": \"xxxx\",        (string) hex-encoded scriptPubKey that receives the dev fee\n"
+            "    \"percent\": n,             (numeric) percentage of the block subsidy paid as dev fee\n"
+            "    \"startheight\": n,         (numeric) first block height that pays the dev fee\n"
+            "    \"nextamount\": n           (numeric) dev fee required in the next block (in satoshis)\n"
+            "  },\n"
             "  \"warnings\": \"...\"          (string) any network and blockchain warnings\n"
             "  \"errors\": \"...\"            (string) DEPRECATED. Same as warnings. Only shown when bitcoind is started with -deprecatedrpc=getmininginfo\n"
             "}\n"
@@ -221,6 +227,14 @@ UniValue getmininginfo(const JSONRPCRequest& request)
     obj.push_back(Pair("networkhashps",    getnetworkhashps(request)));
     obj.push_back(Pair("pooledtx",         (uint64_t)mempool.size()));
     obj.push_back(Pair("chain",            Params().NetworkIDString()));
+    const Consensus::Params& consensusParams = Params().GetConsensus();
+    const CScript devFeeScript = GetDevFeeScript(consensusParams);
+    UniValue devfee(UniValue::VOBJ);
+    devfee.push_back(Pair("script",        HexStr(devFeeScript.begin(), devFeeScript.end())));
+    devfee.push_back(Pair("percent",       consensusParams.nDevFeePercent));
+    devfee.push_back(Pair("startheight",   consensusParams.nDevFeeStartHeight));
+    devfee.push_back(Pair("nextamount",    (int64_t)GetDevFee(chainActive.Height() + 1, consensusParams)));
+    obj.push_back(Pair("devfee",           devfee));
     if (IsDeprecatedRPCEnabled("getmininginfo")) {
         obj.push_back(Pair("errors",       GetWarnings("statusbar")));
     } else {
@@ -350,7 +364,11 @@ UniValue getblocktemplate(const JSONRPCRequest& request)
             "  \"coinbaseaux\" : {                 (json object) data that should be included in the coinbase's scriptSig content\n"
             "      \"flags\" : \"xx\"                  (string) key name is to be ignored, and value included in scriptSig\n"
             "  },\n"
-            "  \"coinbasevalue\" : n,              (numeric) maximum allowable input to coinbase transaction, including the generation award and transaction fees (in satoshis)\n"
+            "  \"coinbasevalue\" : n,              (numeric) maximum allowable input to coinbase transaction, including the generation award and transaction fees, minus the dev fee (in satoshis)\n"
+            "  \"devfee\" : {                      (json object) present only when a dev fee is required; the coinbase must include this output in addition to coinbasevalue\n"
+            "      \"script\" : \"xxxx\",             (string) hex-encoded scriptPubKey that must receive the dev fee\n"
+            "      \"amount\" : n                   (numeric) minimum dev fee amount (in satoshis)\n"
+            "  },\n"
             "  \"coinbasetxn\" : { ... },          (json object) information for coinbase transaction\n"
             "  \"target\" : \"xxxx\",                (string) The hash target\n"
             "  \"mintime\" : xxx,                  (numeric) The minimum timestamp appropriate for next block time in seconds since epoch (Jan 1 1970 GMT)\n"
@@ -444,10 +462,10 @@ UniValue getblocktemplate(const JSONRPCRequest& request)
         throw JSONRPCError(RPC_CLIENT_P2P_DISABLED, "Error: Peer-to-peer functionality missing or disabled");
 
     if (g_connman->GetNodeCount(CConnman::CONNECTIONS_ALL) == 0)
-        throw JSONRPCError(RPC_CLIENT_NOT_CONNECTED, "Bitcoin is not connected!");
+        throw JSONRPCError(RPC_CLIENT_NOT_CONNECTED, "CryptoLari is not connected!");
 
     if (IsInitialBlockDownload())
-        throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD, "Bitcoin is downloading blocks...");
+        throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD, "CryptoLari is downloading blocks...");
 
     static unsigned int nTransactionsUpdatedLast;
 
@@ -654,6 +672,14 @@ UniValue getblocktemplate(const JSONRPCRequest& request)
     result.push_back(Pair("transactions", transactions));
     result.push_back(Pair("coinbaseaux", aux));
     result.push_back(Pair("coinbasevalue", (int64_t)pblock->vtx[0]->vout[0].nValue));
+    const CAmount nDevFee = GetDevFee(pindexPrev->nHeight + 1, consensusParams);
+    if (nDevFee > 0) {
+        const CScript devFeeScript = GetDevFeeScript(consensusParams);
+        UniValue devfee(UniValue::VOBJ);
+        devfee.push_back(Pair("script", HexStr(devFeeScript.begin(), devFeeScript.end())));
+        devfee.push_back(Pair("amount", (int64_t)nDevFee));
+        result.push_back(Pair("devfee", devfee));
+    }
     result.push_back(Pair("longpollid", chainActive.Tip()->GetBlockHash().GetHex() + i64tostr(nTransactionsUpdatedLast)));
     result.push_back(Pair("target", hashTarget.GetHex()));
     result.push_back(Pair("mintime", (int64_t)pindexPrev->GetMedianTimePast()+1));
