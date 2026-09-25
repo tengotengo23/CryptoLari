@@ -114,6 +114,7 @@ BASE_SCRIPTS= [
     'import-rescan.py',
     'mining.py',
     'devfee.py',
+    'explorer.py',
     'bumpfee.py',
     'rpcnamedargs.py',
     'listsinceblock.py',

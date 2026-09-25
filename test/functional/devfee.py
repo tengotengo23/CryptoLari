@@ -51,6 +51,9 @@ class DevFeeTest(BitcoinTestFramework):
         assert_equal(tmpl["devfee"], {"script": DEV_FEE_SCRIPT, "amount": DEV_FEE})
         assert_equal(tmpl["coinbasevalue"], 50 * COIN - DEV_FEE)
 
+        info = node.getmininginfo()["devfee"]
+        assert_equal(info, {"script": DEV_FEE_SCRIPT, "percent": 5, "startheight": DEV_FEE_HEIGHT, "nextamount": DEV_FEE})
+
         self.log.info("Mined blocks pay the dev fee")
         for blockhash in node.generate(3):
             outputs = self.dev_fee_outputs(blockhash)

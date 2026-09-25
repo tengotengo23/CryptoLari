@@ -202,6 +202,12 @@ UniValue getmininginfo(const JSONRPCRequest& request)
             "  \"networkhashps\": nnn,      (numeric) The network hashes per second\n"
             "  \"pooledtx\": n              (numeric) The size of the mempool\n"
             "  \"chain\": \"xxxx\",           (string) current network name as defined in BIP70 (main, test, regtest)\n"
+            "  \"devfee\": {                (json object) dev fee rules\n"
+            "    \"script\": \"xxxx\",        (string) hex-encoded scriptPubKey that receives the dev fee\n"
+            "    \"percent\": n,             (numeric) percentage of the block subsidy paid as dev fee\n"
+            "    \"startheight\": n,         (numeric) first block height that pays the dev fee\n"
+            "    \"nextamount\": n           (numeric) dev fee required in the next block (in satoshis)\n"
+            "  },\n"
             "  \"warnings\": \"...\"          (string) any network and blockchain warnings\n"
             "  \"errors\": \"...\"            (string) DEPRECATED. Same as warnings. Only shown when bitcoind is started with -deprecatedrpc=getmininginfo\n"
             "}\n"
@@ -221,6 +227,14 @@ UniValue getmininginfo(const JSONRPCRequest& request)
     obj.push_back(Pair("networkhashps",    getnetworkhashps(request)));
     obj.push_back(Pair("pooledtx",         (uint64_t)mempool.size()));
     obj.push_back(Pair("chain",            Params().NetworkIDString()));
+    const Consensus::Params& consensusParams = Params().GetConsensus();
+    const CScript devFeeScript = GetDevFeeScript(consensusParams);
+    UniValue devfee(UniValue::VOBJ);
+    devfee.push_back(Pair("script",        HexStr(devFeeScript.begin(), devFeeScript.end())));
+    devfee.push_back(Pair("percent",       consensusParams.nDevFeePercent));
+    devfee.push_back(Pair("startheight",   consensusParams.nDevFeeStartHeight));
+    devfee.push_back(Pair("nextamount",    (int64_t)GetDevFee(chainActive.Height() + 1, consensusParams)));
+    obj.push_back(Pair("devfee",           devfee));
     if (IsDeprecatedRPCEnabled("getmininginfo")) {
         obj.push_back(Pair("errors",       GetWarnings("statusbar")));
     } else {
