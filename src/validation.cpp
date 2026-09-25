@@ -46,6 +46,7 @@
 #include <sstream>
 
 #include <boost/algorithm/string/replace.hpp>
+#include <boost/bind.hpp>
 #include <boost/algorithm/string/join.hpp>
 #include <boost/thread.hpp>
 
