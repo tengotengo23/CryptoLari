@@ -12,8 +12,8 @@ Bitcoin Core-ის კოდზეა აგებული. მას აქ�
 [CRYPTOLARI_PLAN.md](CRYPTOLARI_PLAN.md)**
 
 *English: CryptoLari is an experimental cryptocurrency forked from Bitcoin Core
-0.15.99 with its own genesis block, 2-minute blocks, per-block LWMA difficulty
-adjustment and its own address formats. It is not affiliated with the National
+0.15.99 with its own genesis block, CPU-oriented yespower proof of work,
+2-minute blocks, per-block LWMA difficulty adjustment and its own address formats. It is not affiliated with the National
 Bank of Georgia and is not pegged to the Georgian lari.*
 
 პარამეტრები
@@ -22,7 +22,7 @@ Bank of Georgia and is not pegged to the Georgian lari.*
 | | Mainnet | Testnet |
 |---|---|---|
 | ტიკერი | CLARI | CLARI (ღირებულების გარეშე) |
-| Proof-of-Work | SHA-256d | SHA-256d |
+| Proof-of-Work | yespower 1.0 (N=2048, r=8, „CryptoLari“): მაინინგი ჩვეულებრივ CPU-ზე | იგივე |
 | ბლოკის დრო | 2 წუთი | 2 წუთი |
 | ჯილდო ბლოკზე | 10 CLARI, ნახევრდება ყოველ 1,050,000 ბლოკში (~4 წელი) | იგივე |
 | მაქსიმალური მარაგი | ≈ 21,000,000 CLARI (20,999,999.8635) | იგივე |
@@ -34,10 +34,11 @@ Bank of Georgia and is not pegged to the Georgian lari.*
 | Soft forks | P2SH, BIP34/65/66, CSV, SegWit აქტიურია პირველივე ბლოკიდან | იგივე |
 | მონაცემების საქაღალდე | `~/.cryptolari`, კონფიგი `cryptolari.conf` | `~/.cryptolari/testnet` |
 
-Genesis ბლოკი (mainnet): `00000812596cb6b8240d2576f125d8a3434f6786403ffda50b4fdc74416af73d`
+Genesis ბლოკი (mainnet): `5353972a349d18c895f2ceba17523c6b12ca0b497b02f65d46adb4efd98533cf`
+(ბლოკის ID კვლავ SHA-256d-ით ითვლება, proof-of-work კი yespower-ით მოწმდება.)
 
 Regtest (ლოკალური სატესტო ქსელი ავტომატური ტესტებისთვის) განზრახ იყენებს Bitcoin-ის
-regtest-ის წესებს, რომ upstream-ის ტესტები უცვლელად მუშაობდეს.
+regtest-ის წესებს (მათ შორის SHA-256d-ს), რომ upstream-ის ტესტები უცვლელად მუშაობდეს.
 
 აწყობა (Ubuntu / Debian)
 -----------------------
@@ -73,14 +74,16 @@ src/bitcoin-cli stop
 * სხვა კვანძთან დაკავშირება: `src/bitcoind -daemon -addnode=<IP>:9955`
   (საჯარო seed კვანძები ჯერ არ არსებობს).
 * სატესტო ქსელი: ყველა ბრძანებას დაამატე `-testnet`.
-* პირველი 90 ბლოკი მინიმალური სირთულითაა, შემდეგ LWMA სირთულეს ყოველ ბლოკზე
-  ქსელის რეალურ სიმძლავრეს უსადაგებს.
+* პირველი 90 ბლოკი მინიმალური სირთულითაა (ერთ CPU ბირთვზე ~4 წამი ბლოკზე), შემდეგ
+  LWMA სირთულეს ყოველ ბლოკზე ქსელის რეალურ სიმძლავრეს უსადაგებს.
 
 რა შეიცვალა Bitcoin Core-თან შედარებით
 --------------------------------------
 
 * ახალი genesis ბლოკი, network magic, პორტები, მისამართების პრეფიქსები და bech32 HRP,
   ამიტომ CryptoLari-სა და Bitcoin-ის მისამართები ერთმანეთში არ აგერევა.
+* yespower proof-of-work (`src/crypto/yespower`, `GetBlockPoWHash` `src/pow.cpp`-ში):
+  Bitcoin-ის ASIC-ებით ამ ქსელის მოპოვება ან შეტევა შეუძლებელია.
 * 2-წუთიანი ბლოკები, 10 CLARI ჯილდო და ≈21M მარაგი (`consensus.nInitialSubsidy`).
 * LWMA-1 სირთულის ალგორითმი (`src/pow.cpp`), მომავლის timestamp-ის ლიმიტი 10 წუთი
   და peer-ების საათის კორექციის ლიმიტი 5 წუთი.
@@ -94,8 +97,9 @@ src/bitcoin-cli stop
 * **კოდი 2017 წლისაა** (Bitcoin Core 0.15.99). მას შემდეგ Bitcoin Core-ში ბევრი
   უსაფრთხოების შესწორება შევიდა. სანამ ქსელში რეალური ფული აღმოჩნდება, ეს
   პარამეტრები Bitcoin Core-ის ახალ ვერსიაზე უნდა გადავიდეს.
-* **SHA-256 = 51%-იანი შეტევის რისკი.** ნებისმიერს, ვისაც Bitcoin-ის ASIC აქვს ან
-  სიმძლავრეს იქირავებს, პატარა ქსელის ისტორიის გადაწერა შეუძლია.
+* **51%-იანი შეტევის რისკი შემცირდა, მაგრამ არ გაქრა.** yespower-ის გამო Bitcoin-ის
+  ASIC-ები აქ უსარგებლოა, მაგრამ პატარა ქსელს მაინც შეუტევს ის, ვინც ბევრ CPU-ს
+  (ღრუბლოვან სერვერებს) იქირავებს. რაც მეტი ადამიანი მოიპოვებს, მით უფრო რთულია.
 * გაშვების დღეს genesis ხელახლა უნდა მოიპოვო ახალი თარიღით
   (`contrib/cryptolari/mine-genesis.py`), რომ ყველამ დაინახოს: წინასწარ არავის
   მოუპოვებია.
