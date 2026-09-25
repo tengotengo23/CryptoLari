@@ -1,82 +1,107 @@
-Bitcoin Core integration/staging tree
-=====================================
+CryptoLari
+==========
 
-[![Build Status](https://travis-ci.org/bitcoin/bitcoin.svg?branch=master)](https://travis-ci.org/bitcoin/bitcoin)
+CryptoLari (CLARI) არის ექსპერიმენტული peer-to-peer ციფრული ვალუტა, რომელიც
+Bitcoin Core-ის კოდზეა აგებული. მას აქვს საკუთარი ბლოკჩეინი, საკუთარი მისამართები
+და საკუთარი ქსელი: Bitcoin-ის ქსელთან არ არის დაკავშირებული.
 
-https://bitcoincore.org
+> **CryptoLari არ არის საქართველოს ეროვნული ვალუტა (ლარი, GEL)** და არანაირი კავშირი
+> არ აქვს საქართველოს ეროვნულ ბანკთან. მისი ფასი ₾-ზე მიბმული არ არის.
 
-What is Bitcoin?
-----------------
+📄 **რა არის ეს პროექტი, როგორ შეიძლება ფულის გამომუშავება და ნაბიჯ-ნაბიჯ გეგმა:
+[CRYPTOLARI_PLAN.md](CRYPTOLARI_PLAN.md)**
 
-Bitcoin is an experimental digital currency that enables instant payments to
-anyone, anywhere in the world. Bitcoin uses peer-to-peer technology to operate
-with no central authority: managing transactions and issuing money are carried
-out collectively by the network. Bitcoin Core is the name of open source
-software which enables the use of this currency.
+*English: CryptoLari is an experimental cryptocurrency forked from Bitcoin Core
+0.15.99 with its own genesis block, 2-minute blocks, per-block LWMA difficulty
+adjustment and its own address formats. It is not affiliated with the National
+Bank of Georgia and is not pegged to the Georgian lari.*
 
-For more information, as well as an immediately useable, binary version of
-the Bitcoin Core software, see https://bitcoin.org/en/download, or read the
-[original whitepaper](https://bitcoincore.org/bitcoin.pdf).
+პარამეტრები
+-----------
 
-License
--------
+| | Mainnet | Testnet |
+|---|---|---|
+| ტიკერი | CLARI | CLARI (ღირებულების გარეშე) |
+| Proof-of-Work | SHA-256d | SHA-256d |
+| ბლოკის დრო | 2 წუთი | 2 წუთი |
+| ჯილდო ბლოკზე | 10 CLARI, ნახევრდება ყოველ 1,050,000 ბლოკში (~4 წელი) | იგივე |
+| მაქსიმალური მარაგი | ≈ 21,000,000 CLARI (20,999,999.8635) | იგივე |
+| სირთულის გადათვლა | ყოველ ბლოკზე, LWMA-1 (N = 90 ბლოკი) | იგივე |
+| Coinbase maturity | 100 ბლოკი (~3.3 საათი) | იგივე |
+| მისამართები | `G…` (P2PKH), `S…` (P2SH), `lari1…` (SegWit) | `T…`, `U…`, `tlari1…` |
+| P2P / RPC პორტი | 9955 / 9954 | 19955 / 19954 |
+| Premine | არ არის (genesis-ის ჯილდო OP_RETURN-ზეა, დახარჯვა შეუძლებელია) | არ არის |
+| Soft forks | P2SH, BIP34/65/66, CSV, SegWit აქტიურია პირველივე ბლოკიდან | იგივე |
+| მონაცემების საქაღალდე | `~/.cryptolari`, კონფიგი `cryptolari.conf` | `~/.cryptolari/testnet` |
 
-Bitcoin Core is released under the terms of the MIT license. See [COPYING](COPYING) for more
-information or see https://opensource.org/licenses/MIT.
+Genesis ბლოკი (mainnet): `00000812596cb6b8240d2576f125d8a3434f6786403ffda50b4fdc74416af73d`
 
-Development Process
+Regtest (ლოკალური სატესტო ქსელი ავტომატური ტესტებისთვის) განზრახ იყენებს Bitcoin-ის
+regtest-ის წესებს, რომ upstream-ის ტესტები უცვლელად მუშაობდეს.
+
+აწყობა (Ubuntu / Debian)
+-----------------------
+
+```bash
+sudo apt install build-essential libtool autotools-dev automake pkg-config bsdmainutils python3 \
+    libssl-dev libevent-dev libdb5.3++-dev \
+    libboost-system-dev libboost-filesystem-dev libboost-chrono-dev \
+    libboost-program-options-dev libboost-test-dev libboost-thread-dev
+
+./autogen.sh
+./configure --with-incompatible-bdb --without-gui
+make -j4
+make check        # ტესტები
+```
+
+პროგრამები ჯერ ძველი სახელებით იქმნება: `src/bitcoind` (კვანძი), `src/bitcoin-cli`
+(ბრძანებები), `src/bitcoin-tx`.
+
+გაშვება და მაინინგი
 -------------------
 
-The `master` branch is regularly built and tested, but is not guaranteed to be
-completely stable. [Tags](https://github.com/bitcoin/bitcoin/tags) are created
-regularly to indicate new official, stable release versions of Bitcoin Core.
+```bash
+src/bitcoind -daemon                         # კვანძის გაშვება (mainnet)
+src/bitcoin-cli getblockchaininfo            # ქსელის მდგომარეობა
+ADDR=$(src/bitcoin-cli getnewaddress)        # ახალი მისამართი, იწყება G-თი
+src/bitcoin-cli generatetoaddress 10 $ADDR 100000000   # 10 ბლოკის მოპოვება CPU-თი
+src/bitcoin-cli getbalance                   # ჯილდო ხელმისაწვდომია 100 ბლოკის შემდეგ
+src/bitcoin-cli sendtoaddress <მისამართი> 1.5
+src/bitcoin-cli stop
+```
 
-The contribution workflow is described in [CONTRIBUTING.md](CONTRIBUTING.md).
+* სხვა კვანძთან დაკავშირება: `src/bitcoind -daemon -addnode=<IP>:9955`
+  (საჯარო seed კვანძები ჯერ არ არსებობს).
+* სატესტო ქსელი: ყველა ბრძანებას დაამატე `-testnet`.
+* პირველი 90 ბლოკი მინიმალური სირთულითაა, შემდეგ LWMA სირთულეს ყოველ ბლოკზე
+  ქსელის რეალურ სიმძლავრეს უსადაგებს.
 
-The developer [mailing list](https://lists.linuxfoundation.org/mailman/listinfo/bitcoin-dev)
-should be used to discuss complicated or controversial changes before working
-on a patch set.
+რა შეიცვალა Bitcoin Core-თან შედარებით
+--------------------------------------
 
-Developer IRC can be found on Freenode at #bitcoin-core-dev.
+* ახალი genesis ბლოკი, network magic, პორტები, მისამართების პრეფიქსები და bech32 HRP,
+  ამიტომ CryptoLari-სა და Bitcoin-ის მისამართები ერთმანეთში არ აგერევა.
+* 2-წუთიანი ბლოკები, 10 CLARI ჯილდო და ≈21M მარაგი (`consensus.nInitialSubsidy`).
+* LWMA-1 სირთულის ალგორითმი (`src/pow.cpp`), მომავლის timestamp-ის ლიმიტი 10 წუთი
+  და peer-ების საათის კორექციის ლიმიტი 5 წუთი.
+* გასწორებულია კრიტიკული ხარვეზი CVE-2018-17144 (ორმაგი input-ის შემოწმება ბლოკში).
+* კოდი აეწყობა თანამედროვე GCC 13 / Boost 1.83-ით.
+* `contrib/cryptolari/mine-genesis.py`: ახალი genesis ბლოკის მოპოვება გაშვების დღეს.
 
-Testing
--------
+⚠️ მნიშვნელოვანი შეზღუდვები
+--------------------------
 
-Testing and code review is the bottleneck for development; we get more pull
-requests than we can review and test on short notice. Please be patient and help out by testing
-other people's pull requests, and remember this is a security-critical project where any mistake might cost people
-lots of money.
+* **კოდი 2017 წლისაა** (Bitcoin Core 0.15.99). მას შემდეგ Bitcoin Core-ში ბევრი
+  უსაფრთხოების შესწორება შევიდა. სანამ ქსელში რეალური ფული აღმოჩნდება, ეს
+  პარამეტრები Bitcoin Core-ის ახალ ვერსიაზე უნდა გადავიდეს.
+* **SHA-256 = 51%-იანი შეტევის რისკი.** ნებისმიერს, ვისაც Bitcoin-ის ASIC აქვს ან
+  სიმძლავრეს იქირავებს, პატარა ქსელის ისტორიის გადაწერა შეუძლია.
+* გაშვების დღეს genesis ხელახლა უნდა მოიპოვო ახალი თარიღით
+  (`contrib/cryptolari/mine-genesis.py`), რომ ყველამ დაინახოს: წინასწარ არავის
+  მოუპოვებია.
 
-### Automated Testing
+ლიცენზია
+--------
 
-Developers are strongly encouraged to write [unit tests](src/test/README.md) for new code, and to
-submit new unit tests for old code. Unit tests can be compiled and run
-(assuming they weren't disabled in configure) with: `make check`. Further details on running
-and extending unit tests can be found in [/src/test/README.md](/src/test/README.md).
-
-There are also [regression and integration tests](/test), written
-in Python, that are run automatically on the build server.
-These tests can be run (if the [test dependencies](/test) are installed) with: `test/functional/test_runner.py`
-
-The Travis CI system makes sure that every pull request is built for Windows, Linux, and OS X, and that unit/sanity tests are run automatically.
-
-### Manual Quality Assurance (QA) Testing
-
-Changes should be tested by somebody other than the developer who wrote the
-code. This is especially important for large or high-risk changes. It is useful
-to add a test plan to the pull request description if testing the changes is
-not straightforward.
-
-Translations
-------------
-
-Changes to translations as well as new translations can be submitted to
-[Bitcoin Core's Transifex page](https://www.transifex.com/projects/p/bitcoin/).
-
-Translations are periodically pulled from Transifex and merged into the git repository. See the
-[translation process](doc/translation_process.md) for details on how this works.
-
-**Important**: We do not accept translation changes as GitHub pull requests because the next
-pull from Transifex would automatically overwrite them again.
-
-Translators should also subscribe to the [mailing list](https://groups.google.com/forum/#!forum/bitcoin-translators).
+CryptoLari ვრცელდება MIT ლიცენზიით, იხ. [COPYING](COPYING). კოდის უდიდესი ნაწილი
+Bitcoin Core-ის დეველოპერებს ეკუთვნის (https://github.com/bitcoin/bitcoin).
