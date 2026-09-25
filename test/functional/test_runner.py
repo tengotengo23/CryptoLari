@@ -115,6 +115,7 @@ BASE_SCRIPTS= [
     'mining.py',
     'devfee.py',
     'explorer.py',
+    'pool.py',
     'bumpfee.py',
     'rpcnamedargs.py',
     'listsinceblock.py',
