@@ -40,8 +40,27 @@ Genesis ბლოკი (mainnet): `5353972a349d18c895f2ceba17523c6b12ca0b497b02
 Regtest (ლოკალური სატესტო ქსელი ავტომატური ტესტებისთვის) განზრახ იყენებს Bitcoin-ის
 regtest-ის წესებს (მათ შორის SHA-256d-ს), რომ upstream-ის ტესტები უცვლელად მუშაობდეს.
 
-აწყობა (Ubuntu / Debian)
------------------------
+სწრაფი დაწყება: ერთი ბრძანება
+-----------------------------
+
+Ubuntu/Debian-ზე ყველაფერს ერთი სკრიპტი აკეთებს: აყენებს ბიბლიოთეკებს, აწყობს
+პროგრამას, უშვებს კვანძს (ნაგულისხმევად testnet-ზე) და გიჩვენებს შენს მისამართს:
+
+```bash
+contrib/cryptolari/quickstart.sh            # testnet; mainnet-ისთვის: --main
+contrib/cryptolari/mine.sh --test 2         # მაინინგი 2 CPU ბირთვით (Ctrl+C აჩერებს)
+contrib/cryptolari/explorer/explorer.py --network test   # ექსპლორერი: http://127.0.0.1:8080/
+```
+
+| რა | სად |
+|---|---|
+| ბლოკ-ექსპლორერი + ონკანი (ვებ-გვერდი) | [`contrib/cryptolari/explorer/`](contrib/cryptolari/explorer/explorer.py) |
+| სერვერზე გაშვება (systemd, HTTPS) | [`contrib/cryptolari/deploy/DEPLOY.md`](contrib/cryptolari/deploy/DEPLOY.md) |
+| ვორქშოპის კომპლექტი (გასაყიდად) | [`workshop/`](workshop/README.md) |
+| შემოსავლის გეგმა | [`SHEMOSAVLIS_GEGMA.md`](SHEMOSAVLIS_GEGMA.md) |
+
+აწყობა ხელით (Ubuntu / Debian)
+------------------------------
 
 ```bash
 sudo apt install build-essential libtool autotools-dev automake pkg-config bsdmainutils python3 \
@@ -55,23 +74,23 @@ make -j4
 make check        # ტესტები
 ```
 
-პროგრამები ჯერ ძველი სახელებით იქმნება: `src/bitcoind` (კვანძი), `src/bitcoin-cli`
-(ბრძანებები), `src/bitcoin-tx`.
+პროგრამები: `src/cryptolarid` (კვანძი), `src/cryptolari-cli` (ბრძანებები),
+`src/cryptolari-tx` (ტრანზაქციების ხელსაწყო).
 
 გაშვება და მაინინგი
 -------------------
 
 ```bash
-src/bitcoind -daemon                         # კვანძის გაშვება (mainnet)
-src/bitcoin-cli getblockchaininfo            # ქსელის მდგომარეობა
-ADDR=$(src/bitcoin-cli getnewaddress)        # ახალი მისამართი, იწყება G-თი
-src/bitcoin-cli generatetoaddress 10 $ADDR 100000000   # 10 ბლოკის მოპოვება CPU-თი
-src/bitcoin-cli getbalance                   # ჯილდო ხელმისაწვდომია 100 ბლოკის შემდეგ
-src/bitcoin-cli sendtoaddress <მისამართი> 1.5
-src/bitcoin-cli stop
+src/cryptolarid -daemon                         # კვანძის გაშვება (mainnet)
+src/cryptolari-cli getblockchaininfo            # ქსელის მდგომარეობა
+ADDR=$(src/cryptolari-cli getnewaddress)        # ახალი მისამართი, იწყება G-თი
+src/cryptolari-cli generatetoaddress 10 $ADDR 100000000   # 10 ბლოკის მოპოვება CPU-თი
+src/cryptolari-cli getbalance                   # ჯილდო ხელმისაწვდომია 100 ბლოკის შემდეგ
+src/cryptolari-cli sendtoaddress <მისამართი> 1.5
+src/cryptolari-cli stop
 ```
 
-* სხვა კვანძთან დაკავშირება: `src/bitcoind -daemon -addnode=<IP>:9955`
+* სხვა კვანძთან დაკავშირება: `src/cryptolarid -daemon -addnode=<IP>:9955`
   (საჯარო seed კვანძები ჯერ არ არსებობს).
 * სატესტო ქსელი: ყველა ბრძანებას დაამატე `-testnet`.
 * პირველი 90 ბლოკი მინიმალური სირთულითაა (ერთ CPU ბირთვზე ~4 წამი ბლოკზე), შემდეგ
