@@ -104,14 +104,101 @@ as returned by `getblocktemplate`; `coinbasevalue` already excludes the dev fee.
     make check                                  # unit + cryptolari-tx tests
     test/functional/test_runner.py              # functional tests
 
+ბლოკ-ექსპლორერი / Block explorer
+--------------------------------
+
+`contrib/cryptolari/explorer/explorer.py` — Python 3, დამატებითი პაკეტების გარეშე.
+ინდექსს SQLite-ში ინახავს, reorg-ებს მიჰყვება, აჩვენებს ბლოკებს, ტრანზაქციებს,
+მისამართების ბალანსს და dev fee-ს სტატისტიკას.
+
+    python3 contrib/cryptolari/explorer/explorer.py --rpcuser=<user> --rpcpassword=<pass> --bind=0.0.0.0 --port=8080
+
+API: `/api/stats`, `/api/blocks`, `/api/block/<hash|height>`, `/api/tx/<txid>`,
+`/api/address/<address>`. `--chain=test` testnet-ისთვის; `--rpcuser`-ის გარეშე
+`~/.cryptolari/.cookie`-ს კითხულობს.
+
+მაინინგ-პული / Mining pool
+--------------------------
+
+`contrib/cryptolari/pool/pool.py` — stratum v1 პული (Python 3, პაკეტების გარეშე):
+
+* coinbase-ში იხდის პულის მისამართს, **dev fee-ს** და SegWit commitment-ს;
+* მაინერის username = მისი LARI მისამართი (სურვილისამებრ `.worker` სუფიქსით);
+* ბლოკის დამწიფების (101 დადასტურება) შემდეგ ჯილდოს (მინუს პულის საკომისიო)
+  მაინერებს shares-ის პროპორციულად უგზავნის (PROP), orphan ბლოკებს არ იხდის;
+* სტატისტიკა: `http://<host>:8081/`, `/api/stats`, `/api/miner/<address>`.
+
+    # პულის მისამართი node-ის საფულეში უნდა იყოს
+    ADDR=$(src/cryptolari-cli getnewaddress pool)
+    python3 contrib/cryptolari/pool/pool.py --rpcuser=<user> --rpcpassword=<pass> --address=$ADDR --fee=1
+
+    # მაინერი
+    cpuminer -a sha256d -o stratum+tcp://<host>:3333 -u <LARI მისამართი> -p x
+
+`--no-payouts` — solo რეჟიმი (მთელი ჯილდო `--address`-ზე რჩება).
+`getblocktemplate` მუშაობს მხოლოდ მაშინ, როცა node-ს ერთი peer მაინც ჰყავს;
+მანამდე პული ელოდება.
+
+სერვერზე გაშვება / Server (VPS) setup
+-------------------------------------
+
+Ubuntu 22.04/24.04 სერვერზე, რეპოზიტორიის checkout-იდან:
+
+    sudo contrib/cryptolari/deploy/setup-node.sh --explorer --pool
+
+სკრიპტი აყენებს დამოკიდებულებებს, აწყობს, აინსტალირებს `/usr/local/bin`-ში,
+ქმნის `cryptolari` მომხმარებელს და კონფიგს, და უშვებს node-ს (და ექსპლორერს,
+პულს) systemd სერვისებად. გახსნის პორტებს: 9555 (P2P), 8080 (explorer), 3333
+(stratum), 8081 (pool stats). `--testnet` testnet-ისთვის.
+
+Seed node-ები
+-------------
+
+სერვერების IP-ები (ან hostname-ები) ჩაწერე კოდში, რომ ახალმა node-ებმა ქსელი
+თავად იპოვონ:
+
+    contrib/cryptolari/set_seed_nodes.py 203.0.113.10 203.0.113.11 seed.example.ge
+    make
+
+Windows
+-------
+
+**რეკომენდებული: WSL2** (Ubuntu Windows-ში). PowerShell-ში (ადმინისტრატორად):
+
+    wsl --install -d Ubuntu-24.04
+
+შემდეგ Ubuntu-ს ფანჯარაში შეასრულე ზემოთ მოცემული „აწყობა" ნაბიჯები და
+`src/cryptolarid -daemon`. P2P პორტი 9555 Windows-ის firewall-ში გახსენი.
+
+ნატიური `.exe`-ების cross-compile (Ubuntu-ზე, **ამ ფორკში არ არის გამოცდილი**
+— `depends/` 2017 წლის პაკეტებს იყენებს და ახალ mingw-თან შესაძლოა
+შესწორებები დასჭირდეს):
+
+    sudo apt install g++-mingw-w64-x86-64
+    sudo update-alternatives --set x86_64-w64-mingw32-g++ /usr/bin/x86_64-w64-mingw32-g++-posix
+    cd depends && make HOST=x86_64-w64-mingw32 -j$(nproc) && cd ..
+    ./autogen.sh
+    CONFIG_SITE=$PWD/depends/x86_64-w64-mingw32/share/config.site ./configure --prefix=/
+    make -j$(nproc)
+
+საიტი / Website
+---------------
+
+`contrib/cryptolari/website/index.html` — სტატიკური landing page (ქართ./ინგლ.,
+dev fee-ს ღია აღწერით). ნებისმიერ ჰოსტინგზე აიტვირთება (GitHub Pages, nginx).
+ჩაანაცვლე `EXPLORER_URL` და `POOL_HOST` შენი მისამართებით.
+
 ქსელის გაშვება / Launching the network
 --------------------------------------
 
-1. ჩასვი საკუთარი dev fee მისამართი (იხ. ზემოთ).
-2. გაუშვი რამდენიმე საჯარო node (VPS) და ჩაამატე `vSeeds`/`vFixedSeeds`
-   `src/chainparams.cpp`-ში (ახლა ცარიელია, ამიტომ node-ები ერთმანეთს
-   `-addnode=<ip>:9555`-ით უნდა მიუერთო).
-3. დაიწყე მაინინგი. პირველი ბლოკების მოპოვება CPU-თიც შეიძლება
-   (საწყისი სირთულე დაბალია, `powLimit = 00000fff...`).
-4. dev fee საჯაროდ გაამჟღავნე (README, საიტი), რათა მომხმარებლებმა და
-   მაინერებმა იცოდნენ.
+1. შექმენი dev fee მისამართი და ჩასვი: `contrib/cryptolari/set_devfee_address.py <მისამართი>`.
+2. აიღე მინიმუმ 2 VPS და თითოეულზე გაუშვი `setup-node.sh` (ერთზე `--explorer --pool`).
+3. ჩაწერე მათი IP-ები: `contrib/cryptolari/set_seed_nodes.py <ip1> <ip2>`, ააწყე
+   თავიდან და განაახლე სერვერები. commit/push GitHub-ზე.
+4. **პირველი ბლოკი** მოიპოვე `generatetoaddress`-ით (სანამ ჯაჭვში ახალი ბლოკი
+   არ არის, node „ჩამოტვირთვის" რეჟიმშია და `getblocktemplate`/პული არ მუშაობს):
+
+       cryptolari-cli generatetoaddress 1 <მისამართი> 100000000
+
+   ამის შემდეგ პული ჩვეულებრივ მუშაობს. საწყისი სირთულე დაბალია, CPU-თაც საკმარისია.
+5. ატვირთე საიტი და dev fee საჯაროდ გამოაცხადე.

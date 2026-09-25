@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="ka">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CryptoLari (LARI)</title>
+<meta name="description" content="CryptoLari (LARI) — ღია კოდის კრიპტოვალუტა Bitcoin Core-ის ბაზაზე. 84 მილიონი LARI, 2.5 წუთიანი ბლოკები.">
+<style>
+:root {
+  --bg: #faf9f7; --fg: #1c1b1f; --muted: #66646b; --card: #ffffff; --line: #e6e3de;
+  --accent: #b3261e; --accent-soft: #fbe9e7; --code: #f1efeb;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #111113; --fg: #ececf0; --muted: #a09fa8; --card: #1a1a1e; --line: #2b2b31;
+    --accent: #ff6b5e; --accent-soft: #2a1614; --code: #222227;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #111113; --fg: #ececf0; --muted: #a09fa8; --card: #1a1a1e; --line: #2b2b31;
+  --accent: #ff6b5e; --accent-soft: #2a1614; --code: #222227;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.6 system-ui, -apple-system, "Segoe UI", "Noto Sans Georgian", sans-serif; }
+.wrap { max-width: 1040px; margin: 0 auto; padding: 0 16px; }
+nav { border-bottom: 1px solid var(--line); background: var(--card); position: sticky; top: 0; z-index: 1; }
+nav .wrap { display: flex; align-items: center; justify-content: space-between; gap: 12px; height: 60px; }
+.logo { font-weight: 800; font-size: 20px; color: var(--fg); text-decoration: none; }
+.logo span { color: var(--accent); }
+nav ul { display: flex; gap: 18px; list-style: none; margin: 0; padding: 0; }
+nav a { color: var(--muted); text-decoration: none; font-size: 15px; }
+nav a:hover { color: var(--fg); }
+@media (max-width: 640px) { nav ul { display: none; } }
+.hero { padding: 72px 0 48px; }
+.hero h1 { overflow-wrap: anywhere; font-size: clamp(30px, 6vw, 56px); line-height: 1.1; margin: 0 0 16px; letter-spacing: -0.02em; }
+.hero h1 span { color: var(--accent); }
+.hero p.lead { font-size: 19px; color: var(--muted); max-width: 640px; margin: 0 0 28px; }
+.btns { display: flex; flex-wrap: wrap; gap: 12px; }
+.btn { display: inline-block; padding: 12px 20px; border-radius: 10px; text-decoration: none; font-weight: 600; }
+.btn.primary { background: var(--accent); color: #fff; }
+.btn.ghost { border: 1px solid var(--line); color: var(--fg); background: var(--card); }
+section { padding: 40px 0; }
+h2 { font-size: 28px; margin: 0 0 8px; letter-spacing: -0.01em; }
+.sub { color: var(--muted); margin: 0 0 24px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(210px, 100%), 1fr)); gap: 14px; }
+.card { min-width: 0; background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 18px; }
+.card small { color: var(--muted); display: block; }
+.card b { font-size: 24px; display: block; margin-top: 2px; }
+.card p { margin: 6px 0 0; color: var(--muted); font-size: 14px; }
+.feature h3 { margin: 0 0 6px; font-size: 17px; }
+.feature p { margin: 0; color: var(--muted); font-size: 15px; }
+.devfee { background: var(--accent-soft); border: 1px solid var(--line); border-radius: 16px; padding: 24px; }
+.devfee h2 { color: var(--accent); }
+.bar { display: flex; height: 38px; border-radius: 10px; overflow: hidden; margin: 18px 0 8px; font-size: 14px; font-weight: 600; }
+.bar div { display: flex; align-items: center; padding: 0 12px; color: #fff; white-space: nowrap; }
+.bar .miner { background: #3a6ea5; flex: 95; }
+.bar .dev { background: var(--accent); flex: 5; justify-content: center; padding: 0; }
+.legend { display: flex; flex-wrap: wrap; gap: 16px; color: var(--muted); font-size: 14px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; }
+table { width: 100%; border-collapse: collapse; background: var(--card); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--line); }
+tr:last-child td { border-bottom: 0; }
+th { color: var(--muted); font-weight: 500; font-size: 14px; }
+.table-wrap { overflow-x: auto; }
+pre { background: var(--code); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; overflow-x: auto; font-size: 14px; margin: 10px 0 0; }
+code { overflow-wrap: anywhere; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.steps { counter-reset: s; display: grid; gap: 14px; }
+.step { min-width: 0; background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 18px 18px 18px 60px; position: relative; }
+.step::before { counter-increment: s; content: counter(s); position: absolute; left: 18px; top: 16px; width: 28px; height: 28px; border-radius: 50%; background: var(--accent); color: #fff; font-weight: 700; display: grid; place-items: center; font-size: 14px; }
+.step h3 { margin: 0 0 4px; font-size: 17px; }
+.step p { margin: 0; color: var(--muted); }
+.note { border-left: 3px solid var(--accent); padding: 12px 16px; background: var(--card); border-radius: 0 10px 10px 0; color: var(--muted); font-size: 14px; }
+footer { border-top: 1px solid var(--line); padding: 28px 0 40px; color: var(--muted); font-size: 14px; }
+footer a { color: var(--muted); }
+</style>
+</head>
+<body>
+<nav><div class="wrap">
+  <a class="logo" href="#">Crypto<span>Lari</span></a>
+  <ul>
+    <li><a href="#about">პროექტი</a></li>
+    <li><a href="#devfee">Dev fee</a></li>
+    <li><a href="#mining">მაინინგი</a></li>
+    <li><a href="#specs">პარამეტრები</a></li>
+    <li><a href="#download">ჩამოტვირთვა</a></li>
+  </ul>
+</div></nav>
+
+<header class="hero"><div class="wrap">
+  <h1>Crypto<span>Lari</span> — ღია კოდის ციფრული მონეტა</h1>
+  <p class="lead">LARI არის დეცენტრალიზებული კრიპტოვალუტა Bitcoin Core-ის ბაზაზე: 84 მილიონი მონეტა, 2.5 წუთიანი ბლოკები და სრულად ღია კოდი.<br><span lang="en">An open-source cryptocurrency built on Bitcoin Core.</span></p>
+  <div class="btns">
+    <a class="btn primary" href="#download">ჩამოტვირთვა / Download</a>
+    <a class="btn ghost" href="#mining">დაიწყე მაინინგი</a>
+    <a class="btn ghost" href="EXPLORER_URL">ბლოკ-ექსპლორერი</a>
+  </div>
+</div></header>
+
+<section id="about"><div class="wrap">
+  <h2>რატომ CryptoLari?</h2>
+  <p class="sub">შემოწმებული ტექნოლოგია, საკუთარი ქსელი.</p>
+  <div class="grid">
+    <div class="card feature"><h3>🔒 Bitcoin-ის უსაფრთხოება</h3><p>SHA-256 proof-of-work და Bitcoin Core-ის ათწლეულით გამოცდილი კოდი.</p></div>
+    <div class="card feature"><h3>⚡ უფრო სწრაფი ბლოკები</h3><p>ახალი ბლოკი საშუალოდ ყოველ 2.5 წუთში, SegWit პირველივე ბლოკიდან.</p></div>
+    <div class="card feature"><h3>🧮 შეზღუდული მარაგი</h3><p>სულ 84,000,000 LARI. ჯილდო ნახევრდება დაახლოებით ყოველ 2 წელიწადში.</p></div>
+    <div class="card feature"><h3>👐 ღია და გამჭვირვალე</h3><p>MIT ლიცენზია. ყველა წესი, dev fee-ს ჩათვლით, კოდშია და ყველას შეუძლია შეამოწმოს.</p></div>
+  </div>
+</div></section>
+
+<section id="devfee"><div class="wrap">
+  <div class="devfee">
+    <h2>Dev fee — ღიად</h2>
+    <p>ყოველი ბლოკის ახალი მონეტების (subsidy) <b>5%</b> ავტომატურად გადაეცემა პროექტის დეველოპერს, განვითარების, სერვერების და მხარდაჭერის დასაფინანსებლად. ეს კონსენსუსის წესია: ბლოკი dev fee-ს გარეშე არავალიდურია. ტრანზაქციების საკომისიო 100%-ით მაინერს რჩება.</p>
+    <div class="bar" role="img" aria-label="95% მაინერს, 5% dev fee"><div class="miner">95% მაინერი</div><div class="dev">5%</div></div>
+    <div class="legend"><span><i style="background:#3a6ea5"></i>მაინერი: 95 LARI ბლოკზე</span><span><i style="background:var(--accent)"></i>dev fee: 5 LARI ბლოკზე</span><span>სულ dev fee: 4,200,000 LARI (5%)</span></div>
+    <p style="margin-bottom:0"><span lang="en">5% of every block subsidy goes to the developer. This is enforced by consensus and visible in every block in the explorer. Miners keep all transaction fees.</span></p>
+  </div>
+</div></section>
+
+<section id="specs"><div class="wrap">
+  <h2>პარამეტრები / Specifications</h2>
+  <p class="sub">ძირითადი ციფრები.</p>
+  <div class="grid" style="margin-bottom:16px">
+    <div class="card"><small>მაქსიმალური მარაგი</small><b>84,000,000</b><p>LARI</p></div>
+    <div class="card"><small>ბლოკის ჯილდო</small><b>100 LARI</b><p>ნახევრდება ყოველ 420,000 ბლოკში</p></div>
+    <div class="card"><small>ბლოკის დრო</small><b>2.5 წთ</b><p>სირთულე: ყოველ 2016 ბლოკში</p></div>
+    <div class="card"><small>ალგორითმი</small><b>SHA-256d</b><p>ASIC, GPU და CPU მაინერები</p></div>
+  </div>
+  <div class="table-wrap"><table>
+    <tr><th>პარამეტრი</th><th>mainnet</th><th>testnet</th></tr>
+    <tr><td>P2P პორტი</td><td>9555</td><td>19555</td></tr>
+    <tr><td>RPC პორტი</td><td>9554</td><td>19554</td></tr>
+    <tr><td>მისამართები</td><td><code>G…</code>, <code>T…</code>, <code>lari1…</code></td><td><code>t…</code>, <code>u…</code>, <code>tlari1…</code></td></tr>
+    <tr><td>Coinbase-ის დამწიფება</td><td>100 ბლოკი</td><td>100 ბლოკი</td></tr>
+    <tr><td>აქტიური წესები</td><td colspan="2">BIP16, BIP34, BIP65, BIP66, CSV, SegWit — გენეზისიდან</td></tr>
+  </table></div>
+</div></section>
+
+<section id="mining"><div class="wrap">
+  <h2>მაინინგი / Mining</h2>
+  <p class="sub">ნებისმიერი SHA-256 stratum მაინერით.</p>
+  <div class="steps">
+    <div class="step"><h3>მიიღე LARI მისამართი</h3><p>დააინსტალირე საფულე (იხ. ქვემოთ) და გაუშვი <code>cryptolari-cli getnewaddress</code>.</p></div>
+    <div class="step"><h3>მიუერთდი პულს</h3><p>username = შენი LARI მისამართი, password = ნებისმიერი.</p>
+<pre><code>cgminer -o stratum+tcp://POOL_HOST:3333 -u G…შენი_მისამართი -p x
+cpuminer -a sha256d -o stratum+tcp://POOL_HOST:3333 -u G…შენი_მისამართი -p x</code></pre></div>
+    <div class="step"><h3>მიიღე ანაზღაურება</h3><p>პული ბლოკის ჯილდოს შენი shares-ის პროპორციულად გიხდის, ბლოკის დამწიფების (101 დადასტურება) შემდეგ. სტატისტიკა: <code>http://POOL_HOST:8081/</code>.</p></div>
+  </div>
+</div></section>
+
+<section id="download"><div class="wrap">
+  <h2>ჩამოტვირთვა / Download</h2>
+  <p class="sub">წყაროს კოდი და ინსტრუქციები GitHub-ზეა.</p>
+  <div class="btns" style="margin-bottom:16px">
+    <a class="btn primary" href="https://github.com/tengotengo23/CryptoLari">GitHub</a>
+    <a class="btn ghost" href="https://github.com/tengotengo23/CryptoLari/blob/master/doc/cryptolari.md">დოკუმენტაცია</a>
+  </div>
+<pre><code># Ubuntu: აწყობა წყაროდან / build from source
+git clone https://github.com/tengotengo23/CryptoLari.git && cd CryptoLari
+sudo apt-get install build-essential libtool autotools-dev automake pkg-config libssl-dev \
+  libevent-dev bsdmainutils libdb++-dev libboost-system-dev libboost-filesystem-dev \
+  libboost-chrono-dev libboost-program-options-dev libboost-test-dev libboost-thread-dev
+./autogen.sh && ./configure --with-incompatible-bdb && make -j$(nproc)
+src/cryptolarid -daemon</code></pre>
+</div></section>
+
+<section><div class="wrap">
+  <div class="note">
+    <b>გაფრთხილება.</b> CryptoLari ექსპერიმენტული კრიპტოვალუტაა და არ არის საქართველოს ეროვნული ვალუტა (ლარი, GEL). პროექტი არ არის დაკავშირებული საქართველოს ეროვნულ ბანკთან ან რომელიმე სახელმწიფო უწყებასთან. კრიპტოვალუტის ფასი შეიძლება მკვეთრად შეიცვალოს და დაკარგო ჩადებული თანხა. შეინახე შენი საფულის ასლი.<br>
+    <span lang="en"><b>Disclaimer.</b> CryptoLari is an experimental cryptocurrency. It is not the Georgian lari (GEL) and is not affiliated with the National Bank of Georgia or any government body. Cryptocurrency values can be volatile; you may lose money. Back up your wallet.</span>
+  </div>
+</div></section>
+
+<footer><div class="wrap">
+  CryptoLari · MIT License · <a href="https://github.com/tengotengo23/CryptoLari">github.com/tengotengo23/CryptoLari</a>
+</div></footer>
+</body>
+</html>
