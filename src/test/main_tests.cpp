@@ -3,6 +3,8 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <chainparams.h>
+#include <consensus/merkle.h>
+#include <consensus/validation.h>
 #include <validation.h>
 #include <net.h>
 
@@ -74,4 +76,33 @@ BOOST_AUTO_TEST_CASE(test_combiner_all)
     Test.disconnect(&ReturnTrue);
     BOOST_CHECK(Test());
 }
+
+BOOST_AUTO_TEST_CASE(checkblock_rejects_duplicate_inputs)
+{
+    // CVE-2018-17144: a block containing a transaction that spends the same
+    // outpoint twice must be rejected by CheckBlock itself.
+    CMutableTransaction coinbase;
+    coinbase.vin.resize(1);
+    coinbase.vin[0].prevout.SetNull();
+    coinbase.vin[0].scriptSig = CScript() << OP_1 << OP_1;
+    coinbase.vout.resize(1);
+    coinbase.vout[0].nValue = 0;
+
+    CMutableTransaction spend;
+    spend.vin.resize(2);
+    spend.vin[0].prevout = COutPoint(uint256S("0x01"), 0);
+    spend.vin[1].prevout = spend.vin[0].prevout;
+    spend.vout.resize(1);
+    spend.vout[0].nValue = 1;
+
+    CBlock block;
+    block.vtx.push_back(MakeTransactionRef(std::move(coinbase)));
+    block.vtx.push_back(MakeTransactionRef(std::move(spend)));
+    block.hashMerkleRoot = BlockMerkleRoot(block);
+
+    CValidationState state;
+    BOOST_CHECK(!CheckBlock(block, state, Params().GetConsensus(), false, true));
+    BOOST_CHECK_EQUAL(state.GetRejectReason(), "bad-txns-inputs-duplicate");
+}
+
 BOOST_AUTO_TEST_SUITE_END()
