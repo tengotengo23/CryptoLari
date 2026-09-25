@@ -15,8 +15,9 @@
 #include <vector>
 
 /**
- * Maximum amount of time that a block timestamp is allowed to exceed the
- * current network-adjusted time before the block will be accepted.
+ * Upper bound, across all chains, on how far a block timestamp may exceed the
+ * current network-adjusted time. Each chain's actual limit is
+ * Consensus::Params::nMaxFutureBlockTime, which must not exceed this.
  */
 static const int64_t MAX_FUTURE_BLOCK_TIME = 2 * 60 * 60;
 

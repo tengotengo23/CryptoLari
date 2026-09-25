@@ -10,7 +10,12 @@
 #include <stdint.h>
 #include <vector>
 
-static const int64_t DEFAULT_MAX_TIME_ADJUSTMENT = 70 * 60;
+/**
+ * At most half of the smallest nMaxFutureBlockTime, so peers cannot shift a
+ * node's clock far enough to make it reject honest blocks or accept
+ * timestamps that manipulate the LWMA difficulty.
+ */
+static const int64_t DEFAULT_MAX_TIME_ADJUSTMENT = 5 * 60;
 
 class CNetAddr;
 

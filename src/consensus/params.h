@@ -6,6 +6,7 @@
 #ifndef BITCOIN_CONSENSUS_PARAMS_H
 #define BITCOIN_CONSENSUS_PARAMS_H
 
+#include <amount.h>
 #include <uint256.h>
 #include <limits>
 #include <map>
@@ -49,6 +50,8 @@ struct BIP9Deployment {
 struct Params {
     uint256 hashGenesisBlock;
     int nSubsidyHalvingInterval;
+    /** Block reward before the first halving */
+    CAmount nInitialSubsidy = 50 * COIN;
     /** Block height at which BIP16 becomes active */
     int BIP16Height;
     /** Block height and hash at which BIP34 becomes active */
@@ -73,6 +76,13 @@ struct Params {
     int64_t nPowTargetSpacing;
     int64_t nPowTargetTimespan;
     int64_t DifficultyAdjustmentInterval() const { return nPowTargetTimespan / nPowTargetSpacing; }
+    /**
+     * Number of past blocks averaged by the per-block LWMA difficulty algorithm.
+     * Zero selects Bitcoin's original retarget every DifficultyAdjustmentInterval() blocks.
+     */
+    int64_t nLwmaAveragingWindow = 0;
+    /** Maximum number of seconds a block timestamp may be ahead of network-adjusted time */
+    int64_t nMaxFutureBlockTime = 2 * 60 * 60;
     uint256 nMinimumChainWork;
     uint256 defaultAssumeValid;
 };

@@ -13,52 +13,137 @@
 
 BOOST_FIXTURE_TEST_SUITE(pow_tests, BasicTestingSetup)
 
+/* Bitcoin's original 2016-block retarget (still used by regtest), tested against real Bitcoin blocks. */
+static Consensus::Params BitcoinRetargetParams()
+{
+    Consensus::Params params = CreateChainParams(CBaseChainParams::MAIN)->GetConsensus();
+    params.powLimit = uint256S("00000000ffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
+    params.nPowTargetSpacing = 10 * 60;
+    params.nPowTargetTimespan = 14 * 24 * 60 * 60;
+    params.nLwmaAveragingWindow = 0;
+    return params;
+}
+
 /* Test calculation of next difficulty target with no constraints applying */
 BOOST_AUTO_TEST_CASE(get_next_work)
 {
-    const auto chainParams = CreateChainParams(CBaseChainParams::MAIN);
+    const Consensus::Params params = BitcoinRetargetParams();
     int64_t nLastRetargetTime = 1261130161; // Block #30240
     CBlockIndex pindexLast;
     pindexLast.nHeight = 32255;
     pindexLast.nTime = 1262152739;  // Block #32255
     pindexLast.nBits = 0x1d00ffff;
-    BOOST_CHECK_EQUAL(CalculateNextWorkRequired(&pindexLast, nLastRetargetTime, chainParams->GetConsensus()), 0x1d00d86a);
+    BOOST_CHECK_EQUAL(CalculateNextWorkRequired(&pindexLast, nLastRetargetTime, params), 0x1d00d86a);
 }
 
 /* Test the constraint on the upper bound for next work */
 BOOST_AUTO_TEST_CASE(get_next_work_pow_limit)
 {
-    const auto chainParams = CreateChainParams(CBaseChainParams::MAIN);
+    const Consensus::Params params = BitcoinRetargetParams();
     int64_t nLastRetargetTime = 1231006505; // Block #0
     CBlockIndex pindexLast;
     pindexLast.nHeight = 2015;
     pindexLast.nTime = 1233061996;  // Block #2015
     pindexLast.nBits = 0x1d00ffff;
-    BOOST_CHECK_EQUAL(CalculateNextWorkRequired(&pindexLast, nLastRetargetTime, chainParams->GetConsensus()), 0x1d00ffff);
+    BOOST_CHECK_EQUAL(CalculateNextWorkRequired(&pindexLast, nLastRetargetTime, params), 0x1d00ffff);
 }
 
 /* Test the constraint on the lower bound for actual time taken */
 BOOST_AUTO_TEST_CASE(get_next_work_lower_limit_actual)
 {
-    const auto chainParams = CreateChainParams(CBaseChainParams::MAIN);
+    const Consensus::Params params = BitcoinRetargetParams();
     int64_t nLastRetargetTime = 1279008237; // Block #66528
     CBlockIndex pindexLast;
     pindexLast.nHeight = 68543;
     pindexLast.nTime = 1279297671;  // Block #68543
     pindexLast.nBits = 0x1c05a3f4;
-    BOOST_CHECK_EQUAL(CalculateNextWorkRequired(&pindexLast, nLastRetargetTime, chainParams->GetConsensus()), 0x1c0168fd);
+    BOOST_CHECK_EQUAL(CalculateNextWorkRequired(&pindexLast, nLastRetargetTime, params), 0x1c0168fd);
 }
 
 /* Test the constraint on the upper bound for actual time taken */
 BOOST_AUTO_TEST_CASE(get_next_work_upper_limit_actual)
 {
-    const auto chainParams = CreateChainParams(CBaseChainParams::MAIN);
+    const Consensus::Params params = BitcoinRetargetParams();
     int64_t nLastRetargetTime = 1263163443; // NOTE: Not an actual block time
     CBlockIndex pindexLast;
     pindexLast.nHeight = 46367;
     pindexLast.nTime = 1269211443;  // Block #46367
     pindexLast.nBits = 0x1c387f6f;
-    BOOST_CHECK_EQUAL(CalculateNextWorkRequired(&pindexLast, nLastRetargetTime, chainParams->GetConsensus()), 0x1d00e1fd);
+    BOOST_CHECK_EQUAL(CalculateNextWorkRequired(&pindexLast, nLastRetargetTime, params), 0x1d00e1fd);
+}
+
+/* Build a chain where every block has the given nBits and the given solve time. */
+static void BuildChain(std::vector<CBlockIndex>& blocks, uint32_t nBits, int64_t solvetime)
+{
+    for (size_t i = 0; i < blocks.size(); i++) {
+        blocks[i].pprev = i ? &blocks[i - 1] : nullptr;
+        blocks[i].nHeight = i;
+        blocks[i].nTime = 1790294400 + i * solvetime;
+        blocks[i].nBits = nBits;
+        blocks[i].BuildSkip();
+    }
+}
+
+/* Integer division and the compact encoding may only round the target down, by well under 0.1%. */
+static void CheckTargetNear(uint32_t nBits, const arith_uint256& expected)
+{
+    arith_uint256 actual;
+    actual.SetCompact(nBits);
+    BOOST_CHECK(actual <= expected);
+    BOOST_CHECK(actual >= expected - expected / 1000);
+}
+
+BOOST_AUTO_TEST_CASE(lwma_pow_limit_until_window_filled)
+{
+    const Consensus::Params& params = CreateChainParams(CBaseChainParams::MAIN)->GetConsensus();
+    const unsigned int nPowLimit = UintToArith256(params.powLimit).GetCompact();
+    std::vector<CBlockIndex> blocks(params.nLwmaAveragingWindow);
+    BuildChain(blocks, 0x1c0ffff0, 1);
+    CBlockHeader next;
+    BOOST_CHECK_EQUAL(GetNextWorkRequired(&blocks.back(), &next, params), nPowLimit);
+}
+
+BOOST_AUTO_TEST_CASE(lwma_steady_hashrate_keeps_difficulty)
+{
+    const Consensus::Params& params = CreateChainParams(CBaseChainParams::MAIN)->GetConsensus();
+    std::vector<CBlockIndex> blocks(params.nLwmaAveragingWindow + 50);
+    BuildChain(blocks, 0x1c0ffff0, params.nPowTargetSpacing);
+    CBlockHeader next;
+    CheckTargetNear(GetNextWorkRequired(&blocks.back(), &next, params), arith_uint256().SetCompact(0x1c0ffff0));
+}
+
+BOOST_AUTO_TEST_CASE(lwma_fast_blocks_raise_difficulty)
+{
+    const Consensus::Params& params = CreateChainParams(CBaseChainParams::MAIN)->GetConsensus();
+    std::vector<CBlockIndex> blocks(params.nLwmaAveragingWindow + 1);
+    BuildChain(blocks, 0x1c0ffff0, params.nPowTargetSpacing / 2);
+    CheckTargetNear(LwmaCalculateNextWorkRequired(&blocks.back(), params), arith_uint256().SetCompact(0x1c0ffff0) / 2);
+}
+
+BOOST_AUTO_TEST_CASE(lwma_slow_blocks_capped_at_six_times_spacing)
+{
+    const Consensus::Params& params = CreateChainParams(CBaseChainParams::MAIN)->GetConsensus();
+    std::vector<CBlockIndex> blocks(params.nLwmaAveragingWindow + 1);
+    BuildChain(blocks, 0x1c0ffff0, params.nPowTargetSpacing * 10);
+    CheckTargetNear(LwmaCalculateNextWorkRequired(&blocks.back(), params), arith_uint256().SetCompact(0x1c0ffff0) * 6);
+}
+
+BOOST_AUTO_TEST_CASE(lwma_never_easier_than_pow_limit)
+{
+    const Consensus::Params& params = CreateChainParams(CBaseChainParams::MAIN)->GetConsensus();
+    const unsigned int nPowLimit = UintToArith256(params.powLimit).GetCompact();
+    std::vector<CBlockIndex> blocks(params.nLwmaAveragingWindow + 1);
+    BuildChain(blocks, nPowLimit, params.nPowTargetSpacing * 10);
+    BOOST_CHECK_EQUAL(LwmaCalculateNextWorkRequired(&blocks.back(), params), nPowLimit);
+}
+
+BOOST_AUTO_TEST_CASE(lwma_non_increasing_timestamps_count_as_one_second)
+{
+    const Consensus::Params& params = CreateChainParams(CBaseChainParams::MAIN)->GetConsensus();
+    std::vector<CBlockIndex> blocks(params.nLwmaAveragingWindow + 1);
+    BuildChain(blocks, 0x1c0ffff0, 0);
+    // Every block claims the same time, so each counts as a 1 second solve time.
+    CheckTargetNear(LwmaCalculateNextWorkRequired(&blocks.back(), params), arith_uint256().SetCompact(0x1c0ffff0) / params.nPowTargetSpacing);
 }
 
 BOOST_AUTO_TEST_CASE(GetBlockProofEquivalentTime_test)

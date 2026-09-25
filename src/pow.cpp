@@ -10,9 +10,14 @@
 #include <primitives/block.h>
 #include <uint256.h>
 
+#include <algorithm>
+
 unsigned int GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlockHeader *pblock, const Consensus::Params& params)
 {
     assert(pindexLast != nullptr);
+    if (params.nLwmaAveragingWindow > 0)
+        return LwmaCalculateNextWorkRequired(pindexLast, params);
+
     unsigned int nProofOfWorkLimit = UintToArith256(params.powLimit).GetCompact();
 
     // Only change once per difficulty adjustment interval
@@ -69,6 +74,54 @@ unsigned int CalculateNextWorkRequired(const CBlockIndex* pindexLast, int64_t nF
         bnNew = bnPowLimit;
 
     return bnNew.GetCompact();
+}
+
+/**
+ * LWMA-1 difficulty algorithm by zawy12 (https://github.com/zawy12/difficulty-algorithms/issues/3).
+ *
+ * Retargets every block from the last N solve times, giving linearly more
+ * weight to recent blocks. A small chain needs this: with Bitcoin's 2016-block
+ * retarget, a large miner who joins and then leaves can stall the chain for weeks.
+ */
+unsigned int LwmaCalculateNextWorkRequired(const CBlockIndex* pindexLast, const Consensus::Params& params)
+{
+    const int64_t T = params.nPowTargetSpacing;
+    const int64_t N = params.nLwmaAveragingWindow;
+    // Normalizes the weighted solve time sum so that on-target blocks keep the target unchanged.
+    const int64_t k = N * (N + 1) * T / 2;
+    const int64_t height = pindexLast->nHeight;
+    const arith_uint256 powLimit = UintToArith256(params.powLimit);
+
+    // Not enough history yet: the first N blocks are mined at minimum difficulty.
+    if (height < N)
+        return powLimit.GetCompact();
+
+    arith_uint256 avgTarget;
+    int64_t sumWeightedSolvetimes = 0;
+    int64_t previousTimestamp = pindexLast->GetAncestor(height - N)->GetBlockTime();
+
+    for (int64_t i = height - N + 1, weight = 1; i <= height; i++, weight++) {
+        const CBlockIndex* block = pindexLast->GetAncestor(i);
+
+        // Treat out-of-order timestamps as a 1 second solve time so solve times are never
+        // negative, and cap long ones at 6*T to avoid oscillation after a stall.
+        const int64_t thisTimestamp = std::max(block->GetBlockTime(), previousTimestamp + 1);
+        const int64_t solvetime = std::min(6 * T, thisTimestamp - previousTimestamp);
+        previousTimestamp = thisTimestamp;
+
+        sumWeightedSolvetimes += solvetime * weight;
+
+        arith_uint256 target;
+        target.SetCompact(block->nBits);
+        // Dividing before summing keeps the multiplication below from overflowing.
+        avgTarget += target / arith_uint256(N) / arith_uint256(k);
+    }
+
+    arith_uint256 nextTarget = avgTarget * arith_uint256(sumWeightedSolvetimes);
+    if (nextTarget > powLimit)
+        nextTarget = powLimit;
+
+    return nextTarget.GetCompact();
 }
 
 bool CheckProofOfWork(uint256 hash, unsigned int nBits, const Consensus::Params& params)
