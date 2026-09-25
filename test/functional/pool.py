@@ -123,6 +123,7 @@ class PoolTest(BitcoinTestFramework):
             "--db=" + os.path.join(self.options.tmpdir, "pool.sqlite"), "--bind=127.0.0.1", "--port=0",
             "--stats-bind=127.0.0.1", "--stats-port=0", "--fee=1", "--difficulty=1e-12",
             "--poll=0.2", "--refresh=0.5", "--payout-interval=3600"])
+        lari_pool.log = self.log.getChild("pool")  # keep pool logs out of stderr
         self.pool = lari_pool.create(args)
         self.loop = asyncio.new_event_loop()
         threading.Thread(target=self.loop.run_forever, daemon=True).start()

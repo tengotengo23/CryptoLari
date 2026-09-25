@@ -70,6 +70,7 @@ class ExplorerTest(BitcoinTestFramework):
             "--chain=regtest", "--rpcurl=http://%s:%d/" % (url.hostname, url.port),
             "--rpcuser=" + urllib.parse.unquote(url.username), "--rpcpassword=" + urllib.parse.unquote(url.password),
             "--db=" + os.path.join(self.options.tmpdir, "explorer.sqlite"), "--port=0", "--poll=0.2"])
+        lari_explorer.log = self.log.getChild("explorer")  # keep explorer logs out of stderr
         _, indexer, server = lari_explorer.create(args)
         indexer.start()
         threading.Thread(target=server.serve_forever, daemon=True).start()
