@@ -21,4 +21,14 @@ unsigned int LwmaCalculateNextWorkRequired(const CBlockIndex* pindexLast, const 
 /** Check whether a block hash satisfies the proof-of-work requirement specified by nBits */
 bool CheckProofOfWork(uint256 hash, unsigned int nBits, const Consensus::Params&);
 
+/**
+ * The hash a block header's proof of work is checked against: yespower on
+ * chains with fPowYespower, otherwise the block hash itself (SHA256d).
+ * The block hash stays the block's identifier either way.
+ */
+uint256 GetBlockPoWHash(const CBlockHeader& block, const Consensus::Params&);
+
+/** Check whether a block header satisfies its own proof-of-work requirement */
+bool CheckBlockProofOfWork(const CBlockHeader& block, const Consensus::Params&);
+
 #endif // BITCOIN_POW_H

@@ -71,6 +71,8 @@ struct Params {
     BIP9Deployment vDeployments[MAX_VERSION_BITS_DEPLOYMENTS];
     /** Proof of work parameters */
     uint256 powLimit;
+    /** Hash block headers with yespower instead of SHA256d for proof of work (see GetBlockPoWHash) */
+    bool fPowYespower = false;
     bool fPowAllowMinDifficultyBlocks;
     bool fPowNoRetargeting;
     int64_t nPowTargetSpacing;

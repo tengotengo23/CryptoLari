@@ -4,9 +4,11 @@
 
 #include <chain.h>
 #include <chainparams.h>
+#include <crypto/yespower/yespower.h>
 #include <pow.h>
 #include <random.h>
 #include <util.h>
+#include <utilstrencodings.h>
 #include <test/test_bitcoin.h>
 
 #include <boost/test/unit_test.hpp>
@@ -144,6 +146,44 @@ BOOST_AUTO_TEST_CASE(lwma_non_increasing_timestamps_count_as_one_second)
     BuildChain(blocks, 0x1c0ffff0, 0);
     // Every block claims the same time, so each counts as a 1 second solve time.
     CheckTargetNear(LwmaCalculateNextWorkRequired(&blocks.back(), params), arith_uint256().SetCompact(0x1c0ffff0) / params.nPowTargetSpacing);
+}
+
+/* Official yespower 1.0 test vectors (TESTS-OK of the yespower release), input bytes i*3. */
+BOOST_AUTO_TEST_CASE(yespower_test_vectors)
+{
+    uint8_t src[80];
+    for (size_t i = 0; i < sizeof(src); i++) src[i] = i * 3;
+
+    const yespower_params_t no_pers = {YESPOWER_1_0, 2048, 8, nullptr, 0};
+    yespower_binary_t hash;
+    BOOST_CHECK_EQUAL(yespower_tls(src, sizeof(src), &no_pers, &hash), 0);
+    BOOST_CHECK_EQUAL(HexStr(hash.uc, hash.uc + 32), "69e0e895b3df7aeeb837d71fe199e9d34f7ec46ecbca7a2c4308e51857ae9b46");
+
+    const char* pers = "personality test";
+    const yespower_params_t with_pers = {YESPOWER_1_0, 1024, 32, reinterpret_cast<const uint8_t*>(pers), strlen(pers)};
+    BOOST_CHECK_EQUAL(yespower_tls(src, sizeof(src), &with_pers, &hash), 0);
+    BOOST_CHECK_EQUAL(HexStr(hash.uc, hash.uc + 32), "1f0269acf565c49adc0ef9b8f26ab3808cdc38394a254fddeedcc3aacff6ad9d");
+}
+
+BOOST_AUTO_TEST_CASE(genesis_proof_of_work)
+{
+    for (const std::string& chain : {CBaseChainParams::MAIN, CBaseChainParams::TESTNET}) {
+        const auto chainParams = CreateChainParams(chain);
+        const Consensus::Params& params = chainParams->GetConsensus();
+        CBlockHeader genesis = chainParams->GenesisBlock().GetBlockHeader();
+        BOOST_CHECK(params.fPowYespower);
+        BOOST_CHECK(GetBlockPoWHash(genesis, params) != genesis.GetHash());
+        BOOST_CHECK(CheckBlockProofOfWork(genesis, params));
+        // Any change to the header invalidates the work.
+        genesis.nNonce++;
+        BOOST_CHECK(!CheckBlockProofOfWork(genesis, params));
+    }
+    // Regtest keeps SHA256d so the functional tests can build blocks in Python.
+    const auto regtest = CreateChainParams(CBaseChainParams::REGTEST);
+    const CBlockHeader genesis = regtest->GenesisBlock().GetBlockHeader();
+    BOOST_CHECK(!regtest->GetConsensus().fPowYespower);
+    BOOST_CHECK(GetBlockPoWHash(genesis, regtest->GetConsensus()) == genesis.GetHash());
+    BOOST_CHECK(CheckBlockProofOfWork(genesis, regtest->GetConsensus()));
 }
 
 BOOST_AUTO_TEST_CASE(GetBlockProofEquivalentTime_test)

@@ -244,7 +244,7 @@ BOOST_AUTO_TEST_CASE(CreateNewBlock_validity)
         pblock->hashMerkleRoot = BlockMerkleRoot(*pblock);
         pblock->nNonce = blockinfo[i].nonce;
         // At regtest's minimum difficulty about every second nonce is valid.
-        while (!CheckProofOfWork(pblock->GetHash(), pblock->nBits, chainparams.GetConsensus())) ++pblock->nNonce;
+        while (!CheckBlockProofOfWork(*pblock, chainparams.GetConsensus())) ++pblock->nNonce;
         std::shared_ptr<const CBlock> shared_pblock = std::make_shared<const CBlock>(*pblock);
         BOOST_CHECK(ProcessNewBlock(chainparams, shared_pblock, true, nullptr));
         pblock->hashPrevBlock = pblock->GetHash();

@@ -74,7 +74,8 @@ static CBlock CreateCryptoLariGenesisBlock(uint32_t nTime, uint32_t nNonce, uint
  *
  * Economics: 2 minute blocks, 10 CLARI per block halving every 1,050,000
  * blocks (~4 years), for a total supply just under 21,000,000 CLARI.
- * Difficulty is retargeted every block with LWMA (see pow.cpp).
+ * Proof of work is yespower, which favors ordinary CPUs over ASICs and GPUs,
+ * and difficulty is retargeted every block with LWMA (see pow.cpp).
  */
 class CMainParams : public CChainParams {
 public:
@@ -88,7 +89,8 @@ public:
         consensus.BIP34Hash = uint256();
         consensus.BIP65Height = 1;
         consensus.BIP66Height = 1;
-        consensus.powLimit = uint256S("00000fffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
+        consensus.powLimit = uint256S("000fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
+        consensus.fPowYespower = true; // CPU mining; SHA-256 ASICs cannot mine or attack this chain
         consensus.nPowTargetSpacing = 2 * 60;
         consensus.nPowTargetTimespan = 2016 * consensus.nPowTargetSpacing; // only sizes the BIP9 window
         consensus.nLwmaAveragingWindow = 90; // 3 hours of blocks
@@ -127,9 +129,9 @@ public:
         nDefaultPort = 9955; // +995 is Georgia's calling code
         nPruneAfterHeight = 100000;
 
-        genesis = CreateCryptoLariGenesisBlock(1790294400, 6046023, 0x1e0fffff, 1, 10 * COIN);
+        genesis = CreateCryptoLariGenesisBlock(1790294400, 2573, 0x1f0fffff, 1, 10 * COIN);
         consensus.hashGenesisBlock = genesis.GetHash();
-        assert(consensus.hashGenesisBlock == uint256S("0x00000812596cb6b8240d2576f125d8a3434f6786403ffda50b4fdc74416af73d"));
+        assert(consensus.hashGenesisBlock == uint256S("0x5353972a349d18c895f2ceba17523c6b12ca0b497b02f65d46adb4efd98533cf"));
         assert(genesis.hashMerkleRoot == uint256S("0xa7aa8f3dc632a5dbfb1fbcbf0beedfc5ab315d5331ebaa773be74939b4ec4b1e"));
 
         // No public seed nodes exist yet. Until they do, connect nodes with -addnode=<ip>.
@@ -150,7 +152,7 @@ public:
 
         checkpointData = (CCheckpointData) {
             {
-                { 0, uint256S("0x00000812596cb6b8240d2576f125d8a3434f6786403ffda50b4fdc74416af73d")},
+                { 0, uint256S("0x5353972a349d18c895f2ceba17523c6b12ca0b497b02f65d46adb4efd98533cf")},
             }
         };
 
@@ -176,7 +178,8 @@ public:
         consensus.BIP34Hash = uint256();
         consensus.BIP65Height = 1;
         consensus.BIP66Height = 1;
-        consensus.powLimit = uint256S("00000fffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
+        consensus.powLimit = uint256S("000fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
+        consensus.fPowYespower = true; // CPU mining; SHA-256 ASICs cannot mine or attack this chain
         consensus.nPowTargetSpacing = 2 * 60;
         consensus.nPowTargetTimespan = 2016 * consensus.nPowTargetSpacing;
         consensus.nLwmaAveragingWindow = 90;
@@ -209,9 +212,9 @@ public:
         nDefaultPort = 19955;
         nPruneAfterHeight = 1000;
 
-        genesis = CreateCryptoLariGenesisBlock(1790294460, 3211270, 0x1e0fffff, 1, 10 * COIN);
+        genesis = CreateCryptoLariGenesisBlock(1790294460, 2767, 0x1f0fffff, 1, 10 * COIN);
         consensus.hashGenesisBlock = genesis.GetHash();
-        assert(consensus.hashGenesisBlock == uint256S("0x000009d8f0dd39bfd10314880af6258b696fb3e83c0613b7a6c094064aa20d39"));
+        assert(consensus.hashGenesisBlock == uint256S("0xb2bcccc4ddcedc1564a52bede534072400c67b3b951f6ea2ce050d1a12158bff"));
         assert(genesis.hashMerkleRoot == uint256S("0xa7aa8f3dc632a5dbfb1fbcbf0beedfc5ab315d5331ebaa773be74939b4ec4b1e"));
 
         vFixedSeeds.clear();
@@ -231,7 +234,7 @@ public:
 
         checkpointData = (CCheckpointData) {
             {
-                { 0, uint256S("0x000009d8f0dd39bfd10314880af6258b696fb3e83c0613b7a6c094064aa20d39")},
+                { 0, uint256S("0xb2bcccc4ddcedc1564a52bede534072400c67b3b951f6ea2ce050d1a12158bff")},
             }
         };
 

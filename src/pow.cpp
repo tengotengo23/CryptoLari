@@ -7,10 +7,15 @@
 
 #include <arith_uint256.h>
 #include <chain.h>
+#include <crypto/yespower/yespower.h>
 #include <primitives/block.h>
+#include <streams.h>
 #include <uint256.h>
+#include <version.h>
 
 #include <algorithm>
+#include <cstdlib>
+#include <cstring>
 
 unsigned int GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlockHeader *pblock, const Consensus::Params& params)
 {
@@ -141,4 +146,37 @@ bool CheckProofOfWork(uint256 hash, unsigned int nBits, const Consensus::Params&
         return false;
 
     return true;
+}
+
+uint256 GetBlockPoWHash(const CBlockHeader& block, const Consensus::Params& params)
+{
+    if (!params.fPowYespower)
+        return block.GetHash();
+
+    // yespower 1.0 with 2 MiB of memory (N = 2048, r = 8): about 1 ms per hash
+    // on a desktop core, and designed so that GPUs and ASICs gain little over
+    // CPUs. The personalization string keeps hashrate that is set up for other
+    // yespower coins from mining CryptoLari as-is.
+    static const yespower_params_t yespower_params = {
+        YESPOWER_1_0, 2048, 8, reinterpret_cast<const uint8_t*>("CryptoLari"), 10};
+
+    std::vector<unsigned char> header;
+    CVectorWriter(SER_NETWORK, PROTOCOL_VERSION, header, 0, block);
+
+    yespower_binary_t hash;
+    if (yespower_tls(header.data(), header.size(), &yespower_params, &hash) != 0) {
+        // This only fails when 2 MiB cannot be allocated. Carrying on could get a
+        // valid block marked invalid and fork this node off the network.
+        std::abort();
+    }
+
+    uint256 result;
+    static_assert(sizeof(hash.uc) == 32, "yespower hash must fill a uint256");
+    memcpy(result.begin(), hash.uc, sizeof(hash.uc));
+    return result;
+}
+
+bool CheckBlockProofOfWork(const CBlockHeader& block, const Consensus::Params& params)
+{
+    return CheckProofOfWork(GetBlockPoWHash(block, params), block.nBits, params);
 }

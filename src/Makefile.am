@@ -29,6 +29,7 @@ LIBBITCOIN_CONSENSUS=libbitcoin_consensus.a
 LIBBITCOIN_CLI=libbitcoin_cli.a
 LIBBITCOIN_UTIL=libbitcoin_util.a
 LIBBITCOIN_CRYPTO=crypto/libbitcoin_crypto.a
+LIBCRYPTOLARI_YESPOWER=crypto/libcryptolari_yespower.a
 LIBBITCOINQT=qt/libbitcoinqt.a
 LIBSECP256K1=secp256k1/libsecp256k1.la
 
@@ -49,6 +50,7 @@ $(LIBSECP256K1): $(wildcard secp256k1/src/*) $(wildcard secp256k1/include/*)
 # But to build the less dependent modules first, we manually select their order here:
 EXTRA_LIBRARIES += \
   $(LIBBITCOIN_CRYPTO) \
+  $(LIBCRYPTOLARI_YESPOWER) \
   $(LIBBITCOIN_UTIL) \
   $(LIBBITCOIN_COMMON) \
   $(LIBBITCOIN_CONSENSUS) \
@@ -279,6 +281,19 @@ if USE_ASM
 crypto_libbitcoin_crypto_a_SOURCES += crypto/sha256_sse4.cpp
 endif
 
+# yespower: the CPU-oriented proof-of-work hash of CryptoLari's main and test
+# networks (see crypto/yespower/README.md). yespower-opt.c includes
+# yespower-platform.c, so the latter is not compiled on its own.
+crypto_libcryptolari_yespower_a_CPPFLAGS = $(AM_CPPFLAGS)
+crypto_libcryptolari_yespower_a_CFLAGS = $(PIE_FLAGS) -Wno-cpp
+crypto_libcryptolari_yespower_a_SOURCES = \
+  crypto/yespower/insecure_memzero.h \
+  crypto/yespower/sha256.c \
+  crypto/yespower/sha256.h \
+  crypto/yespower/sysendian.h \
+  crypto/yespower/yespower-opt.c \
+  crypto/yespower/yespower.h
+
 # consensus: shared between all executables that validate any consensus rules.
 libbitcoin_consensus_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
 libbitcoin_consensus_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
@@ -394,6 +409,7 @@ bitcoind_LDADD = \
   $(LIBBITCOIN_ZMQ) \
   $(LIBBITCOIN_CONSENSUS) \
   $(LIBBITCOIN_CRYPTO) \
+  $(LIBCRYPTOLARI_YESPOWER) \
   $(LIBLEVELDB) \
   $(LIBLEVELDB_SSE42) \
   $(LIBMEMENV) \
@@ -481,6 +497,7 @@ CLEANFILES += zmq/*.gcda zmq/*.gcno
 CLEANFILES += obj/build.h
 
 EXTRA_DIST = $(CTAES_DIST)
+EXTRA_DIST += crypto/yespower/README.md crypto/yespower/yespower-platform.c
 
 
 config/bitcoin-config.h: config/stamp-h1
