@@ -350,7 +350,11 @@ UniValue getblocktemplate(const JSONRPCRequest& request)
             "  \"coinbaseaux\" : {                 (json object) data that should be included in the coinbase's scriptSig content\n"
             "      \"flags\" : \"xx\"                  (string) key name is to be ignored, and value included in scriptSig\n"
             "  },\n"
-            "  \"coinbasevalue\" : n,              (numeric) maximum allowable input to coinbase transaction, including the generation award and transaction fees (in satoshis)\n"
+            "  \"coinbasevalue\" : n,              (numeric) maximum allowable input to coinbase transaction, including the generation award and transaction fees, minus the dev fee (in satoshis)\n"
+            "  \"devfee\" : {                      (json object) present only when a dev fee is required; the coinbase must include this output in addition to coinbasevalue\n"
+            "      \"script\" : \"xxxx\",             (string) hex-encoded scriptPubKey that must receive the dev fee\n"
+            "      \"amount\" : n                   (numeric) minimum dev fee amount (in satoshis)\n"
+            "  },\n"
             "  \"coinbasetxn\" : { ... },          (json object) information for coinbase transaction\n"
             "  \"target\" : \"xxxx\",                (string) The hash target\n"
             "  \"mintime\" : xxx,                  (numeric) The minimum timestamp appropriate for next block time in seconds since epoch (Jan 1 1970 GMT)\n"
@@ -654,6 +658,14 @@ UniValue getblocktemplate(const JSONRPCRequest& request)
     result.push_back(Pair("transactions", transactions));
     result.push_back(Pair("coinbaseaux", aux));
     result.push_back(Pair("coinbasevalue", (int64_t)pblock->vtx[0]->vout[0].nValue));
+    const CAmount nDevFee = GetDevFee(pindexPrev->nHeight + 1, consensusParams);
+    if (nDevFee > 0) {
+        const CScript devFeeScript = GetDevFeeScript(consensusParams);
+        UniValue devfee(UniValue::VOBJ);
+        devfee.push_back(Pair("script", HexStr(devFeeScript.begin(), devFeeScript.end())));
+        devfee.push_back(Pair("amount", (int64_t)nDevFee));
+        result.push_back(Pair("devfee", devfee));
+    }
     result.push_back(Pair("longpollid", chainActive.Tip()->GetBlockHash().GetHex() + i64tostr(nTransactionsUpdatedLast)));
     result.push_back(Pair("target", hashTarget.GetHex()));
     result.push_back(Pair("mintime", (int64_t)pindexPrev->GetMedianTimePast()+1));

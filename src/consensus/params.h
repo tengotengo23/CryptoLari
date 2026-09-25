@@ -6,10 +6,12 @@
 #ifndef BITCOIN_CONSENSUS_PARAMS_H
 #define BITCOIN_CONSENSUS_PARAMS_H
 
+#include <amount.h>
 #include <uint256.h>
 #include <limits>
 #include <map>
 #include <string>
+#include <vector>
 
 namespace Consensus {
 
@@ -49,6 +51,14 @@ struct BIP9Deployment {
 struct Params {
     uint256 hashGenesisBlock;
     int nSubsidyHalvingInterval;
+    /** Block subsidy before any halving */
+    CAmount nInitialSubsidy = 50 * COIN;
+    /** Percentage of the block subsidy that must be paid to devFeeScript (0 disables the dev fee) */
+    int nDevFeePercent = 0;
+    /** First block height at which the dev fee is enforced */
+    int nDevFeeStartHeight = 0;
+    /** scriptPubKey that receives the dev fee */
+    std::vector<unsigned char> devFeeScript;
     /** Block height at which BIP16 becomes active */
     int BIP16Height;
     /** Block height and hash at which BIP34 becomes active */

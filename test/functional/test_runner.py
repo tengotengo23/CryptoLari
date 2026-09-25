@@ -113,6 +113,7 @@ BASE_SCRIPTS= [
     'nulldummy.py',
     'import-rescan.py',
     'mining.py',
+    'devfee.py',
     'bumpfee.py',
     'rpcnamedargs.py',
     'listsinceblock.py',

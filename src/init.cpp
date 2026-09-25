@@ -439,6 +439,7 @@ std::string HelpMessage(HelpMessageMode mode)
         strUsage += HelpMessageOpt("-limitdescendantcount=<n>", strprintf("Do not accept transactions if any ancestor would have <n> or more in-mempool descendants (default: %u)", DEFAULT_DESCENDANT_LIMIT));
         strUsage += HelpMessageOpt("-limitdescendantsize=<n>", strprintf("Do not accept transactions if any ancestor would have more than <n> kilobytes of in-mempool descendants (default: %u).", DEFAULT_DESCENDANT_SIZE_LIMIT));
         strUsage += HelpMessageOpt("-vbparams=deployment:start:end", "Use given start/end times for specified version bits deployment (regtest-only)");
+        strUsage += HelpMessageOpt("-devfeeheight=<n>", "Enforce the dev fee starting at block height <n> (regtest-only, default: disabled)");
     }
     strUsage += HelpMessageOpt("-debug=<category>", strprintf(_("Output debugging information (default: %u, supplying <category> is optional)"), 0) + ". " +
         _("If <category> is not supplied or if <category> = 1, output all debugging information.") + " " + _("<category> can be:") + " " + ListLogCategories() + ".");
@@ -1101,6 +1102,24 @@ bool AppInitParameterInteraction()
         std::vector<std::string> vstrReplacementModes;
         boost::split(vstrReplacementModes, strReplacementModeList, boost::is_any_of(","));
         fEnableReplacement = (std::find(vstrReplacementModes.begin(), vstrReplacementModes.end(), "fee") != vstrReplacementModes.end());
+    }
+
+    if (chainparams.NetworkIDString() == CBaseChainParams::MAIN && chainparams.DevFeeScriptIsPlaceholder()) {
+        return InitError("The mainnet dev fee address is still the placeholder, so the dev fee would be lost. "
+                         "Set DEV_FEE_SCRIPT_MAIN in src/chainparams.cpp before running mainnet (see doc/cryptolari.md).");
+    }
+
+    if (gArgs.IsArgSet("-devfeeheight")) {
+        // Allow enabling the dev fee for testing
+        if (!chainparams.MineBlocksOnDemand()) {
+            return InitError("The dev fee start height may only be overridden on regtest.");
+        }
+        int64_t nHeight;
+        if (!ParseInt64(gArgs.GetArg("-devfeeheight", ""), &nHeight) || nHeight < 1 || nHeight > std::numeric_limits<int>::max()) {
+            return InitError(strprintf("Invalid -devfeeheight (%s)", gArgs.GetArg("-devfeeheight", "")));
+        }
+        UpdateDevFeeStartHeight(nHeight);
+        LogPrintf("Setting dev fee start height to %d\n", nHeight);
     }
 
     if (gArgs.IsArgSet("-vbparams")) {

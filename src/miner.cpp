@@ -162,9 +162,14 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
     CMutableTransaction coinbaseTx;
     coinbaseTx.vin.resize(1);
     coinbaseTx.vin[0].prevout.SetNull();
-    coinbaseTx.vout.resize(1);
+    const CAmount nDevFee = GetDevFee(nHeight, chainparams.GetConsensus());
+    coinbaseTx.vout.resize(nDevFee > 0 ? 2 : 1);
     coinbaseTx.vout[0].scriptPubKey = scriptPubKeyIn;
-    coinbaseTx.vout[0].nValue = nFees + GetBlockSubsidy(nHeight, chainparams.GetConsensus());
+    coinbaseTx.vout[0].nValue = nFees + GetBlockSubsidy(nHeight, chainparams.GetConsensus()) - nDevFee;
+    if (nDevFee > 0) {
+        coinbaseTx.vout[1].scriptPubKey = GetDevFeeScript(chainparams.GetConsensus());
+        coinbaseTx.vout[1].nValue = nDevFee;
+    }
     coinbaseTx.vin[0].scriptSig = CScript() << nHeight << OP_0;
     pblock->vtx[0] = MakeTransactionRef(std::move(coinbaseTx));
     pblocktemplate->vchCoinbaseCommitment = GenerateCoinbaseCommitment(*pblock, pindexPrev, chainparams.GetConsensus());
