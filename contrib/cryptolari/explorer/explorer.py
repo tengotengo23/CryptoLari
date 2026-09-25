@@ -535,7 +535,12 @@ class Explorer:
             addr = link_addr(o["address"]) if o["address"] else '<span class="muted">%s</span>' % html.escape(o["type"])
             if o["devfee"]:
                 addr += ' <span class="tag dev">dev fee</span>'
-            spent = ("დახარჯული → " + link_tx(o["spent_by"], short=True)) if o["spent_by"] else '<span class="muted">დაუხარჯავი</span>'
+            if o["type"] == "nulldata":
+                spent = '<span class="muted">—</span>'
+            elif o["spent_by"]:
+                spent = "დახარჯული → " + link_tx(o["spent_by"], short=True)
+            else:
+                spent = '<span class="muted">დაუხარჯავი</span>'
             body += "<tr><td>%d</td><td>%s</td><td>%s</td><td>%s</td></tr>" % (o["n"], addr, fmt(o["value"]), spent)
         body += "</table></div>"
         return self.page("ტრანზაქცია", body)

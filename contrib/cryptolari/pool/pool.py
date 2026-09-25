@@ -502,6 +502,10 @@ class Pool:
         while True:
             try:
                 await self.update_template()
+            except RPCError as e:
+                if self.job is not None or time.time() - getattr(self, "last_wait_log", 0) > 60:
+                    log.warning("getblocktemplate failed: %s", e)
+                    self.last_wait_log = time.time()
             except Exception:
                 log.exception("getblocktemplate failed")
             await asyncio.sleep(self.args.poll)
@@ -542,6 +546,7 @@ class Pool:
     def stats(self):
         s = self.ledger.stats()
         s.update(height=self.job.height if self.job else None,
+                 stats_port=getattr(self, "stats_port", None),
                  network_difficulty=target_to_difficulty(self.job.target) if self.job else None,
                  connected_miners=len(self.miners), fee_percent=self.args.fee,
                  payouts=not self.args.no_payouts, stratum_port=self.port)
@@ -570,7 +575,11 @@ class Pool:
         await miner.handle()
 
     async def start(self):
-        await self.update_template(force=True)
+        try:
+            await self.update_template(force=True)
+        except RPCError as e:
+            # e.g. the node has no peers yet or is still syncing; template_loop keeps retrying
+            log.warning("no block template yet (%s), waiting for the node", e)
         self.server = await asyncio.start_server(self.on_connect, self.args.bind, self.args.port)
         self.port = self.server.sockets[0].getsockname()[1]
         log.info("stratum pool listening on %s:%d (fee %s%%, payouts %s)", self.args.bind, self.port,
